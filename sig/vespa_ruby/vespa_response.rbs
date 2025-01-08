@@ -1,0 +1,24 @@
+# Generated from lib/vespa_ruby/vespa_response.rb with RBS::Inline
+
+module VespaRuby
+  class VespaResponse
+    attr_reader children: Array[String]?
+
+    attr_reader request_body: String?
+
+    attr_reader reason_phrase: String?
+
+    attr_reader json: Hash[String, untyped]
+
+    attr_reader status: int?
+
+    attr_reader field_list: Array[String]?
+
+    attr_reader total_count: int?
+
+    attr_reader errors: Array[untyped]?
+
+    # : (::Faraday::Response) -> void
+    def initialize: (::Faraday::Response) -> void
+  end
+end

@@ -1,0 +1,21 @@
+# Generated from lib/vespa_ruby/query_helper.rb with RBS::Inline
+
+module VespaRuby
+  module QueryHelper
+    # : (Array[String], String?)
+    def handle_splat: (untyped arg_array, ?default: untyped) -> untyped
+
+    # : (String) -> String
+    def double_quoted_string: (String) -> String
+
+    # : (Numeric|TrueClass|FalseClass|String) -> bool
+    def unquoted?: (Numeric | TrueClass | FalseClass | String) -> bool
+
+    # : (Array[String]) -> Array[String]
+    def quoted_array: (Array[String]) -> Array[String]
+
+    # See https://docs.vespa.ai/en/reference/query-language-reference.html#annotations
+    # : (Hash[untyped, untyped], String?)
+    def build_annotations: (untyped hash, ?untyped phrase) -> untyped
+  end
+end

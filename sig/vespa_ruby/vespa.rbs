@@ -1,0 +1,7 @@
+# Generated from lib/vespa_ruby/vespa.rb with RBS::Inline
+
+module VespaRuby
+  class Vespa
+    def self.query: () -> untyped
+  end
+end

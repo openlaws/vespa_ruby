@@ -1,0 +1,64 @@
+classDiagram
+    YqlQuery --|> SimpleQuery : inherits
+    class Api{
+        +$initialize():Api
+        +URI url
+        +Faraday conn
+    }
+    class YqlQuery{
+        +$select() YqlQuery
+        +from() YqlQuery
+        +where() YqlQuery
+        +order_by() YqlQuery
+        -build_yql_hash_hash()
+        +build_request()
+    }
+    class SimpleQuery{
+        +$query() SimpleQuery
+        +filter() SimpleQuery
+        -build_yql_hash_hash()
+        -build_query_model_hash()
+        +build_request()
+    }
+    class VespaRequest{
+        +$initialize()
+        +yql()
+        +hits()
+        +offset()
+        +timeout()
+        +query_model()
+        +ranking()
+        +presentation()
+        +tracing()
+        +execute(Api conn, float timeout) VespaResponse
+    }
+    class VespaResponse{
+        +$initialize()
+        +children()
+        +json()
+        +reason_phrase()
+        +status()
+        +total_count()
+        +field_list()
+        +errors()
+    }
+    class WhereOp{
+        +$contains() : String
+        +$and() : String
+        +$of() : String
+        +$nearest_neighbor() : String
+        +$wand() : String
+        +$weakAnd() : String
+        +$rank() : String
+        +$user_input() : String
+        +$in() : String
+        +$not() : String
+        +$range() : String
+        +$phrase() : String
+        +$uri() : String
+        +$lt() : String
+        +$lte() : String
+        +$gt() : String
+        +$gte() : String
+        +$eq() : String
+    }

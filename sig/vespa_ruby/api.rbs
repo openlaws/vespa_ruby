@@ -1,0 +1,26 @@
+# Generated from lib/vespa_ruby/api.rb with RBS::Inline
+
+module VespaRuby
+  class Api
+    include VespaRuby::Loggable
+
+    attr_reader url: String
+
+    attr_reader conn: ::Faraday::Connection
+
+    attr_reader debug: bool
+
+    # : (String?, bool) -> void
+    def initialize: (String?, bool) -> void
+
+    # See https://docs.vespa.ai/en/reference/healthchecks.html
+    # : () -> bool
+    def up?: () -> bool
+
+    # : (VespaRequest) -> VespaResponse?
+    def execute_search: (VespaRequest) -> VespaResponse?
+
+    # : (String) -> VespaResponse?
+    def raw_search_post: (String) -> VespaResponse?
+  end
+end

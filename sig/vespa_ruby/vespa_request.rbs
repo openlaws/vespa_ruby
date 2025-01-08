@@ -1,0 +1,33 @@
+# Generated from lib/vespa_ruby/vespa_request.rb with RBS::Inline
+
+module VespaRuby
+  class VespaRequest
+    DEFAULT_HIT_LIMIT: ::Integer
+
+    attr_accessor yql: String
+
+    attr_accessor hits: int
+
+    attr_accessor offset: int
+
+    attr_accessor timeout: int
+
+    attr_accessor query_profile: Hash[untyped, untyped]
+
+    attr_accessor query_model: Hash[untyped, untyped]
+
+    attr_accessor ranking: Hash[untyped, untyped]
+
+    attr_accessor presentation: Hash[untyped, untyped]
+
+    attr_accessor tracing: Hash[untyped, untyped]
+
+    def initialize: (untyped yql, ?options: untyped) -> untyped
+
+    # Faraday expects a Hash
+    # : () -> Hash[Symbol, untyped]
+    def post_body: () -> Hash[Symbol, untyped]
+
+    def to_s: () -> untyped
+  end
+end

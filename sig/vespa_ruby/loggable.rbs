@@ -1,0 +1,10 @@
+# Generated from lib/vespa_ruby/loggable.rb with RBS::Inline
+
+module VespaRuby
+  module Loggable
+    attr_reader logger: ::Logger
+
+    # : () -> ::Logger
+    def logger: () -> ::Logger
+  end
+end

@@ -1,0 +1,51 @@
+# Generated from lib/vespa_ruby/yql_query.rb with RBS::Inline
+
+module VespaRuby
+  class YqlQuery
+    include VespaRuby::QueryHelper
+
+    attr_reader select_value: String
+
+    attr_reader from_value: String
+
+    attr_reader where_value: String
+
+    attr_reader order_by_value: String
+
+    attr_reader model_restrict: String
+
+    attr_reader model_sources: String
+
+    def initialize: () -> untyped
+
+    # : (*String) -> YqlQuery
+    def self.select: (*String) -> YqlQuery
+
+    # : (*String) -> YqlQuery
+    def select: (*String) -> YqlQuery
+
+    # : (*String) -> YqlQuery
+    def from: (*String) -> YqlQuery
+
+    # : (String) -> YqlQuery
+    def where: (String) -> YqlQuery
+
+    # : (String) -> YqlQuery
+    def restrict: (String) -> YqlQuery
+
+    # : (String) -> YqlQuery
+    def sources: (String) -> YqlQuery
+
+    # : (*String, Hash[untyped, untyped]) -> YqlQuery
+    def order_by: (*String, Hash[untyped, untyped]) -> YqlQuery
+
+    # : () -> Hash[String, String]
+    def build_query_model_hash: () -> Hash[String, String]
+
+    # : () -> String
+    def build_yql_string: () -> String
+
+    # : (Hash[untyped, untyped]) -> VespaRequest
+    def build_request: (Hash[untyped, untyped]) -> VespaRequest
+  end
+end

@@ -1,0 +1,34 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: http://localhost:8080/search/
+    body:
+      encoding: UTF-8
+      string: '{"hits":5,"model.queryString":""}'
+    headers:
+      User-Agent:
+      - Faraday v2.9.0
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 400
+      message: Bad Request
+    headers:
+      Content-Length:
+      - '161'
+      Content-Type:
+      - application/json;charset=utf-8
+      Date:
+      - Sat, 30 Mar 2024 05:37:33 GMT
+    body:
+      encoding: UTF-8
+      string: '{"root":{"id":"toplevel","relevance":1.0,"fields":{"totalCount":0},"errors":[{"code":3,"summary":"Illegal
+        query","source":"laws_content","message":"No query"}]}}'
+  recorded_at: Sat, 30 Mar 2024 05:37:33 GMT
+recorded_with: VCR 6.2.0

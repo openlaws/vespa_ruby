@@ -1,0 +1,21 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+.pryrc
+
+# Ignore all environment files (except templates).
+/.env*
+!/.env*.erb
+
+# Ignore other files
+.byebug_history
+.DS_Store
+.idea
+.pryrc
+.tool-versions
+*~

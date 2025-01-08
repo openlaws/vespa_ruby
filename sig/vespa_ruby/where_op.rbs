@@ -1,0 +1,67 @@
+# Generated from lib/vespa_ruby/where_op.rb with RBS::Inline
+
+module VespaRuby
+  # Implements operations here: https://docs.vespa.ai/en/reference/query-language-reference.html#where
+  module WhereOp
+    extend QueryHelper
+
+    # : (String, untyped, Hash[untyped, untyped]) -> String
+    def self.contains: (String, untyped, Hash[untyped, untyped]) -> String
+
+    # : (String, String) -> String
+    def self.and: (String, String) -> String
+
+    # : (String, String) -> String
+    def self.or: (String, String) -> String
+
+    # : (String, String, Hash[untyped, untyped]) -> String
+    def self.nearest_neighbor: (String, String, Hash[untyped, untyped]) -> String
+
+    # : (Array[untyped], Hash[untyped, untyped]) -> String
+    def self.wand: (Array[untyped], Hash[untyped, untyped]) -> String
+
+    # : (String, String, Hash[untyped, untyped]) -> String
+    def self.weak_and: (String, String, Hash[untyped, untyped]) -> String
+
+    # Split apart match and ranking arguments for usability
+    def self.rank: (untyped match_argument, *untyped ranking_arguments) -> untyped
+
+    # : (String) -> String
+    def self.user_input: (String) -> String
+
+    # TODO: Consider implementing more optimal parameter substitution
+    # where integer_field in (@integer_values)&integer_values=10,20,30
+    # where string_field in (@string_values)&string_values=germany,france,norway
+    # : (String, Array[String|Numeric]) -> String
+    def self.in: (String, Array[String | Numeric]) -> String
+
+    # : (String) -> String
+    def self.not: (String) -> String
+
+    # range() lower and upper bounds are inclusive. "-Infinity" and "Infinity" are valid values.
+    # : (String, String|Numeric, String|Numeric, Hash[untyped, untyped]) -> String
+    def self.range: (String, String | Numeric, String | Numeric, Hash[untyped, untyped]) -> String
+
+    # : (Array[String]) -> String
+    def self.phrase: (Array[String]) -> String
+
+    # : (String) -> String
+    def self.uri: (String) -> String
+
+    # : (String|Numeric, Numeric) -> String
+    def self.lt: (String | Numeric, Numeric) -> String
+
+    # : (String|Numeric, Numeric) -> String
+    def self.lte: (String | Numeric, Numeric) -> String
+
+    # : (String|Numeric, Numeric) -> String
+    def self.gt: (String | Numeric, Numeric) -> String
+
+    # : (String|Numeric, Numeric) -> String
+    def self.gte: (String | Numeric, Numeric) -> String
+
+    # String value must go on the right. We can't tell the difference between field names and values.
+    # : (String, String|Numeric) -> String
+    def self.eq: (String, String | Numeric) -> String
+  end
+end

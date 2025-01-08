@@ -1,0 +1,72 @@
+# Generated from lib/vespa_ruby/simple_query.rb with RBS::Inline
+
+module VespaRuby
+  class SimpleQuery < YqlQuery
+    # See https://docs.vespa.ai/en/reference/query-api-reference.html#query-model
+    # Not supporting model.encoding, model.locale, model.language, model.searchPath
+    attr_reader model_query_string_value: String?
+
+    # See https://docs.vespa.ai/en/reference/query-api-reference.html#query-model
+    # Not supporting model.encoding, model.locale, model.language, model.searchPath
+    attr_reader model_default_index: String?
+
+    # See https://docs.vespa.ai/en/reference/query-api-reference.html#query-model
+    # Not supporting model.encoding, model.locale, model.language, model.searchPath
+    attr_reader model_filter: String?
+
+    # See https://docs.vespa.ai/en/reference/query-api-reference.html#query-model
+    # Not supporting model.encoding, model.locale, model.language, model.searchPath
+    attr_reader model_type: String?
+
+    def initialize: () -> untyped
+
+    # : (String) -> YqlQuery
+    def self.query: (String) -> YqlQuery
+
+    # : (String) -> YqlQuery
+    def query: (String) -> YqlQuery
+
+    # Example 1:
+    # input.query(myEmbedding)=embed(bert, "Hello world")
+    #
+    # Example 2:
+    # {
+    #    'yql': 'select title,url from wiki where {targetHits:10}nearestNeighbor(paragraph_embeddings, q)',
+    #    'input.query(q)': 'embed(metric spaces)'
+    # }
+    #
+    # Example 3: Hybrid search
+    # {
+    #    'yql': 'select title,url from wiki where (userQuery()) or ({targetHits:10}nearestNeighbor(paragraph_embeddings, q))',
+    #    'input.query(q)': 'embed(metric spaces)',
+    #    'query': 'metric spaces',
+    #    'ranking': 'hybrid'
+    # }
+    #
+    # Example 4:
+    # vespa query 'yql=select * from doc where userQuery() or ({targetHits: 100}nearestNeighbor(embedding, e))' \
+    #  'input.query(e)=embed(e5, "query: exchanging information by sound")' \
+    #  'query=exchanging information by sound'
+    def query_embedding: () -> untyped
+
+    # : (String) -> YqlQuery
+    def default_index: (String) -> YqlQuery
+
+    # : (String) -> YqlQuery
+    def filter: (String) -> YqlQuery
+
+    # TODO: Add {targetHits: #{params[:limit] * 10}} to weakAnd queries. Default is 100.
+    # See https://docs.vespa.ai/en/reference/simple-query-language-reference.html
+    # : (String) -> YqlQuery
+    def type: (String) -> YqlQuery
+
+    # : () -> Hash[Symbol|String, String?]?
+    def build_query_model_hash: () -> Hash[Symbol | String, String?]?
+
+    # : (Hash[untyped, untyped]) -> String
+    def build_yql_string: (Hash[untyped, untyped]) -> String
+
+    # : (Hash[untyped, untyped]) -> VespaRequest
+    def build_request: (Hash[untyped, untyped]) -> VespaRequest
+  end
+end
