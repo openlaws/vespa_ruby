@@ -8,7 +8,9 @@ module VespaRuby
 
       op_contains_num = WhereOp.contains("a", 1)
       assert_equal "a contains 1", op_contains_num
+    end
 
+    test "contains with annotations" do
       op_contains_stem = WhereOp.contains("a", "A", annotations: {stem: "false"})
       assert_equal "a contains ({stem: false}\"A\")", op_contains_stem
 
