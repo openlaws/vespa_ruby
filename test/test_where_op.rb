@@ -8,6 +8,12 @@ module VespaRuby
 
       op_contains_num = WhereOp.contains("a", 1)
       assert_equal "a contains 1", op_contains_num
+
+      op_contains_stem = WhereOp.contains("a", "A", annotations: {stem: "false"})
+      assert_equal "a contains ({stem: false}\"A\")", op_contains_stem
+
+      op_contains_stem = WhereOp.contains("a", "A", annotations: {prefix: true})
+      assert_equal "a contains ({prefix: true}\"A\")", op_contains_stem   
     end
 
     test "and or" do
