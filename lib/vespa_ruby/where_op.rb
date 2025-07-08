@@ -9,15 +9,9 @@ module VespaRuby
 
     #: (String, untyped, Hash[untyped, untyped]) -> String
     def self.contains(left, right, annotations: {})
-      return "#{left} contains ({stem: #{annotations[:stem]}}#{right})" if annotations[:stem]&.equal?("false")
-
-      if right.is_a?(String)
-        right_value = double_quoted_string(right)
-        annotated_right_value = annotations.empty? ? right_value : build_annotations(annotations, right_value)
-        return "#{left} contains #{annotated_right_value}"
-      end
-
-      "#{left} contains #{right}"
+      right_value = right.is_a?(String) ? double_quoted_string(right) : right.to_s
+      right_value = build_annotations(annotations, right_value) unless annotations.empty?
+      "#{left} contains #{right_value}"
     end
 
     #: (String, String) -> String

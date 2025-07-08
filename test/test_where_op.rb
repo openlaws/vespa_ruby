@@ -10,12 +10,26 @@ module VespaRuby
       assert_equal "a contains 1", op_contains_num
     end
 
+    # NOTE: no test for annotated non-String values as there are no valid use cases yet. It looks like the intention was
+    # for numeric values, but the interface can also be used with custom objects that implement their own to_s. As a
+    # side note, functions could also be on the right side. I think it would make sense in that case to implement as a
+    # generic Vespa function class w/ custom to_s or maybe custom classes per function type. That should still be fully
+    # compatible w/ the current interface.
     test "contains with annotations" do
       op_contains_stem = WhereOp.contains("a", "A", annotations: {stem: "false"})
       assert_equal "a contains ({stem: false}\"A\")", op_contains_stem
 
+      op_contains_stem = WhereOp.contains("a", "A", annotations: {stem: "true"})
+      assert_equal "a contains ({stem: true}\"A\")", op_contains_stem
+
       op_contains_stem = WhereOp.contains("a", "A", annotations: {prefix: true})
-      assert_equal "a contains ({prefix: true}\"A\")", op_contains_stem   
+      assert_equal "a contains ({prefix: true}\"A\")", op_contains_stem
+
+      op_contains_stem = WhereOp.contains("a", "A", annotations: {prefix: true, stem: false})
+      assert_equal "a contains ({prefix: true, stem: false}\"A\")", op_contains_stem
+
+      op_contains_stem = WhereOp.contains("a", "A", annotations: {stem: false, prefix: true})
+      assert_equal "a contains ({stem: false, prefix: true}\"A\")", op_contains_stem
     end
 
     test "and or" do
