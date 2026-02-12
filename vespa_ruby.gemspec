@@ -33,7 +33,7 @@ Gem::Specification.new do |spec|
 
   # Uncomment to register a new dependency of your gem
   spec.add_dependency "activesupport"
-  spec.add_dependency "faraday", "~> 2.9.0"
+  spec.add_dependency "faraday", "< 3.a"
   spec.add_dependency "logging"
   spec.add_dependency "zeitwerk"
 
