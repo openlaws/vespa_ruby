@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary = "Ruby Vespa API client and YQL query builder"
   spec.homepage = "https://github.com/openlaws/vespa_ruby"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.3.0"
+  spec.required_ruby_version = ">= 4.0.0"
 
   spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
 
@@ -38,7 +38,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "zeitwerk"
 
   spec.add_development_dependency "minitest"
-  spec.add_development_dependency "pry-byebug", "~> 3.10.1"
   spec.add_development_dependency "rbs-inline"
   spec.add_development_dependency "simplecov"
   spec.add_development_dependency "standard", "~> 1.3"

@@ -14,6 +14,17 @@ module VespaRuby
       # assert_equal @api.url, "http://localhost:8080"
     end
 
+    test "initialize sets default timeouts" do
+      assert_equal VespaRuby::Api::DEFAULT_TIMEOUT, @api.conn.options.timeout
+      assert_equal VespaRuby::Api::DEFAULT_OPEN_TIMEOUT, @api.conn.options.open_timeout
+    end
+
+    test "initialize with custom timeouts" do
+      api = VespaRuby::Api.new(timeout: 30, open_timeout: 2)
+      assert_equal 30, api.conn.options.timeout
+      assert_equal 2, api.conn.options.open_timeout
+    end
+
     test "initialize with VESPA_URL" do
       url = "https://vespa-host:8080"
       ENV["VESPA_URL"] = url
@@ -41,6 +52,14 @@ module VespaRuby
       assert_equal 200, result.status
       assert_equal 10, result.children.length
       assert_equal 618, result.total_count
+    end
+
+    test "raw_search_post raises Faraday::Error on transport failure" do
+      @api.conn.define_singleton_method(:post) { |*| raise Faraday::ConnectionFailed, "boom" }
+
+      assert_raises(Faraday::Error) do
+        @api.raw_search_post("{}")
+      end
     end
 
     test "execute_search yql" do

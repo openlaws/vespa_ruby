@@ -32,8 +32,8 @@ module VespaRuby
     # TODO: Consider implementing more optimal parameter substitution
     # where integer_field in (@integer_values)&integer_values=10,20,30
     # where string_field in (@string_values)&string_values=germany,france,norway
-    # : (String, Array[String|Numeric]) -> String
-    def self.in: (String, Array[String | Numeric]) -> String
+    # : (String, Array[String|Integer]) -> String
+    def self.in: (String, Array[String | Integer]) -> String
 
     # : (String) -> String
     def self.not: (String) -> String
@@ -41,6 +41,9 @@ module VespaRuby
     # range() lower and upper bounds are inclusive. "-Infinity" and "Infinity" are valid values.
     # : (String, String|Numeric, String|Numeric, Hash[untyped, untyped]) -> String
     def self.range: (String, String | Numeric, String | Numeric, Hash[untyped, untyped]) -> String
+
+    # : (String|Numeric) -> bool
+    def self.valid_numeric_or_number_string?: (String | Numeric) -> bool
 
     # : (Array[String]) -> String
     def self.phrase: (Array[String]) -> String

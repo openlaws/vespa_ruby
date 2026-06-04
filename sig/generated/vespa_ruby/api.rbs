@@ -1,0 +1,39 @@
+# Generated from lib/vespa_ruby/api.rb with RBS::Inline
+
+module VespaRuby
+  class Api
+    include VespaRuby::Loggable
+
+    # Total read timeout (seconds) the client waits for a response.
+    DEFAULT_TIMEOUT: ::Integer
+
+    # Timeout (seconds) the client waits to open the connection.
+    DEFAULT_OPEN_TIMEOUT: ::Integer
+
+    attr_reader url: String
+
+    attr_reader conn: ::Faraday::Connection
+
+    attr_reader debug: bool
+
+    # : (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric) -> void
+    def initialize: (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric) -> void
+
+    # See https://docs.vespa.ai/en/reference/healthchecks.html
+    # : () -> bool
+    def up?: () -> bool
+
+    # Returns a VespaResponse for any completed HTTP exchange, including
+    # non-200 responses (check VespaResponse#status). Raises Faraday::Error
+    # (e.g. Faraday::TimeoutError, Faraday::ConnectionFailed) on transport
+    # failure; callers are expected to rescue it.
+    # : (VespaRequest) -> VespaResponse
+    def execute_search: (VespaRequest) -> VespaResponse
+
+    # See #execute_search for the return/raise contract: returns a
+    # VespaResponse for any completed exchange and raises Faraday::Error on
+    # transport failure.
+    # : (String) -> VespaResponse
+    def raw_search_post: (String) -> VespaResponse
+  end
+end

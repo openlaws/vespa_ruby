@@ -2,7 +2,7 @@
 
 # rbs_inline: enabled
 
-require "active_support"
+require "active_support/core_ext/object/blank"
 
 module VespaRuby
   class YqlQuery
@@ -13,7 +13,8 @@ module VespaRuby
       :where_value,
       :order_by_value,
       :model_restrict,
-      :model_sources #: String
+      :model_sources,
+      :ranking_profile_value #: String
 
     def initialize
       @select_value ||= nil
@@ -22,6 +23,7 @@ module VespaRuby
       @order_by_value ||= nil
       @model_restrict ||= nil
       @model_sources ||= nil
+      @ranking_profile_value ||= nil
     end
 
     #: (*String) -> YqlQuery
@@ -68,6 +70,16 @@ module VespaRuby
       self
     end
 
+    # Select the Vespa rank-profile to score with (request param "ranking.profile").
+    # When unset, Vespa scores with the schema's default profile (nativeRank).
+    # See https://docs.vespa.ai/en/reference/query-api-reference.html#ranking.profile
+    #: (String) -> YqlQuery
+    def ranking_profile(profile)
+      @ranking_profile_value = profile
+
+      self
+    end
+
     #: (*String, Hash[untyped, untyped]) -> YqlQuery
     def order_by(*attribute_order_pairs, annotations: {})
       @order_by_value = "order by #{attribute_order_pairs.join(", ")}"
@@ -96,7 +108,19 @@ module VespaRuby
 
     #: (Hash[untyped, untyped]) -> VespaRequest
     def build_request(options: {})
-      VespaRequest.new(build_yql_string, options: options.merge({query_model: build_query_model_hash}))
+      VespaRequest.new(build_yql_string, options: options.merge({query_model: build_query_model_hash, ranking: build_ranking_hash(options)}))
+    end
+
+    # Merge the fluent rank-profile (if set) onto any caller-supplied ranking hash.
+    # The explicit setter wins so `ranking_profile(...)` overrides a stale options entry,
+    # while the raw `options[:ranking]` escape hatch keeps working for other ranking.* keys.
+    #: (Hash[untyped, untyped]) -> Hash[untyped, untyped]
+    def build_ranking_hash(options = {})
+      ranking = options[:ranking] || {}
+
+      return ranking unless @ranking_profile_value
+
+      ranking.merge("ranking.profile": @ranking_profile_value)
     end
   end
 end
