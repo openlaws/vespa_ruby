@@ -34,7 +34,7 @@ class ActiveSupport::TestCase
       str.underscore.gsub(/[^A-Z]+/i, "_")
     end.join("/")
 
-    super(test_name) do
+    super do
       VCR.use_cassette(cassette) do
         instance_eval(&block)
       end

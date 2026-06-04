@@ -13,7 +13,87 @@ If bundler is not being used to manage dependencies, install the gem by executin
 
 ## Usage
 
-TODO: Write usage instructions here
+### Connecting
+
+```ruby
+api = VespaRuby::Api.new          # base URL from ENV["VESPA_URL"], else http://localhost:8080
+api = VespaRuby::Api.new("http://vespa.internal:8080", debug: true)
+
+api.up?                           # => true / false (health check)
+```
+
+### Keyword search with `SimpleQuery`
+
+`SimpleQuery` builds a Vespa [`userQuery()`](https://docs.vespa.ai/en/reference/query-language-reference.html#userquery)
+request via a fluent chain, then `build_request` turns it into a request you hand to the API.
+
+```ruby
+query = VespaRuby::SimpleQuery.query("meal break")
+  .select("id")                   # summary fields to return
+  .type("weakAnd")                # all | any | weakAnd | tokenize | web | phrase
+  .restrict("division")           # schema to search
+  .where(VespaRuby::WhereOp.contains("jurisdiction", "CA"))
+
+request  = query.build_request(options: { hits: 10 })
+response = api.execute_search(request)
+
+response.status        # => 200
+response.total_count   # => total matches
+response.children      # => array of hits, each with a "fields" hash
+```
+
+### Selecting a rank profile
+
+Use `ranking_profile` to score with a specific Vespa rank profile (the `ranking.profile`
+request parameter). When unset, Vespa uses the schema's default profile. It composes with
+`default_index` (handy when a profile scores fields outside the default fieldset):
+
+```ruby
+VespaRuby::SimpleQuery.query("meal break")
+  .restrict("division")
+  .default_index("ranktext")
+  .ranking_profile("bm25_anc_heavy")
+  .where(VespaRuby::WhereOp.contains("jurisdiction", "CA"))
+  .build_request(options: { hits: 10 })
+```
+
+### Building filter clauses with `WhereOp`
+
+`WhereOp` produces YQL fragments for `where(...)`. Common operators: `contains`, `and`, `or`,
+`not`, `range`, `lt`/`lte`/`gt`/`gte`/`eq`, `phrase`, `in`, `nearest_neighbor`.
+
+```ruby
+clause = VespaRuby::WhereOp.and(
+  VespaRuby::WhereOp.contains("jurisdiction", "CA"),
+  VespaRuby::WhereOp.contains("lawKey", "CA-LAB")
+)
+```
+
+### Raw YQL with `YqlQuery`
+
+For full control, build the YQL directly instead of relying on `userQuery()`:
+
+```ruby
+VespaRuby::YqlQuery
+  .select("id", "name")
+  .from("division")
+  .where(VespaRuby::WhereOp.contains("name", "election"))
+  .ranking_profile("bm25_title3_anc2")
+  .build_request(options: { hits: 25 })
+```
+
+### Advanced: raw request options
+
+`build_request` accepts an `options` hash merged into the request body, so any parameter the
+gem doesn't wrap is still reachable. The `ranking_profile` setter is sugar over this and wins
+on conflict; other `ranking.*` keys you pass through are preserved:
+
+```ruby
+query.build_request(options: {
+  hits: 10,
+  ranking: { "ranking.profile": "bm25_anc_heavy", "ranking.listFeatures": true }
+})
+```
 
 ## Development
 
@@ -25,7 +105,10 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 `bundle exec rake test`
 
 ## Regenerating RBS signatures
-`bundle exec rbs-inline lib/vespa_ruby --output=sig`
+`bundle exec rbs-inline lib/vespa_ruby --output`
+
+Generated signatures are written to `sig/generated/` (the rbs-inline default). Hand-written
+signatures (e.g. `sig/vespa_ruby.rbs`) live directly under `sig/` and are not overwritten.
 
 ## Contributing
 

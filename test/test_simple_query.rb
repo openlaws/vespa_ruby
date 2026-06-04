@@ -43,5 +43,24 @@ module VespaRuby
       yql = q.build_yql_string
       assert_equal "", yql
     end
+
+    test "ranking_profile is carried through build_request into post_body" do
+      q = SimpleQuery.query("meal break")
+        .select("id")
+        .type("weakAnd")
+        .restrict("division")
+        .default_index("ranktext")
+        .ranking_profile("bm25_anc_heavy")
+        .where(WhereOp.contains("jurisdiction", "CA"))
+
+      assert_equal "bm25_anc_heavy", q.ranking_profile_value
+
+      request = q.build_request(options: {hits: 10})
+      # rubocop:disable Style/HashSyntax
+      assert_equal({:"ranking.profile" => "bm25_anc_heavy"}, request.ranking)
+      # rubocop:enable Style/HashSyntax
+      assert_equal "bm25_anc_heavy", request.post_body[:"ranking.profile"]
+      assert_equal "ranktext", request.post_body[:"model.defaultIndex"]
+    end
   end
 end

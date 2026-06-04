@@ -122,7 +122,7 @@ module VespaRuby
     #: (Hash[untyped, untyped]) -> VespaRequest
     def build_request(options: {})
       request_yql = build_yql_string
-      VespaRequest.new(request_yql.present? ? request_yql : nil, options: options.merge({query_model: build_query_model_hash}))
+      VespaRequest.new(request_yql.present? ? request_yql : nil, options: options.merge({query_model: build_query_model_hash, ranking: build_ranking_hash(options)}))
     end
   end
 end

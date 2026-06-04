@@ -16,6 +16,8 @@ module VespaRuby
 
     attr_reader model_sources: String
 
+    attr_reader ranking_profile_value: String
+
     def initialize: () -> untyped
 
     # : (*String) -> YqlQuery
@@ -36,6 +38,12 @@ module VespaRuby
     # : (String) -> YqlQuery
     def sources: (String) -> YqlQuery
 
+    # Select the Vespa rank-profile to score with (request param "ranking.profile").
+    # When unset, Vespa scores with the schema's default profile (nativeRank).
+    # See https://docs.vespa.ai/en/reference/query-api-reference.html#ranking.profile
+    # : (String) -> YqlQuery
+    def ranking_profile: (String) -> YqlQuery
+
     # : (*String, Hash[untyped, untyped]) -> YqlQuery
     def order_by: (*String, Hash[untyped, untyped]) -> YqlQuery
 
@@ -47,5 +55,11 @@ module VespaRuby
 
     # : (Hash[untyped, untyped]) -> VespaRequest
     def build_request: (Hash[untyped, untyped]) -> VespaRequest
+
+    # Merge the fluent rank-profile (if set) onto any caller-supplied ranking hash.
+    # The explicit setter wins so `ranking_profile(...)` overrides a stale options entry,
+    # while the raw `options[:ranking]` escape hatch keeps working for other ranking.* keys.
+    # : (Hash[untyped, untyped]) -> Hash[untyped, untyped]
+    def build_ranking_hash: (Hash[untyped, untyped]) -> Hash[untyped, untyped]
   end
 end

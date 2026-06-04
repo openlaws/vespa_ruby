@@ -77,6 +77,31 @@ module VespaRuby
       assert_equal expected, q.build_request.query_model
     end
 
+    test "ranking.profile" do
+      q = YqlQuery.select.from.where("true").ranking_profile("bm25_anc_heavy")
+      assert_equal "bm25_anc_heavy", q.ranking_profile_value
+
+      # rubocop:disable Style/HashSyntax
+      expected = {:"ranking.profile" => "bm25_anc_heavy"}
+      # rubocop:enable Style/HashSyntax
+      assert_equal expected, q.build_request.ranking
+    end
+
+    test "ranking.profile unset leaves ranking empty" do
+      q = YqlQuery.select.from.where("true")
+      assert_equal({}, q.build_request.ranking)
+    end
+
+    test "ranking_profile setter wins over raw options[:ranking] and preserves other ranking keys" do
+      q = YqlQuery.select.from.where("true").ranking_profile("winner")
+      req = q.build_request(options: {ranking: {"ranking.profile": "stale", "ranking.listFeatures": true}})
+
+      # rubocop:disable Style/HashSyntax
+      expected = {:"ranking.profile" => "winner", :"ranking.listFeatures" => true}
+      # rubocop:enable Style/HashSyntax
+      assert_equal expected, req.ranking
+    end
+
     test "chaining basic queries" do
       q1 = YqlQuery.select.from("doc").where("true")
       assert_equal "select * from doc where true", q1.build_yql_string

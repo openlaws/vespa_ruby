@@ -2,8 +2,6 @@
 
 module VespaRuby
   module Loggable
-    attr_reader logger: ::Logger
-
     # : () -> ::Logger
     def logger: () -> ::Logger
   end
