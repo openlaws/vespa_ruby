@@ -13,6 +13,11 @@
   Both methods now share one contract: return a `VespaResponse` for any
   completed exchange (check `#status`), raise `Faraday::Error` (including
   `Faraday::TimeoutError`) otherwise.
+- Fix standalone (non-Rails) use: require `active_support/core_ext/object/blank`
+  from the entrypoint so `build_request` no longer raises `NoMethodError` for
+  `blank?`/`present?`. Previously the gem only required bare `active_support`,
+  which does not load these core extensions, so it relied on Rails having loaded
+  them globally.
 - Add `YqlQuery#ranking_profile` / `SimpleQuery#ranking_profile` fluent setter to
   select a Vespa rank-profile (request param `ranking.profile`). Composes with the
   existing raw `options[:ranking]` escape hatch (the setter wins on conflict).
