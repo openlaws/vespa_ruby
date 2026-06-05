@@ -14,7 +14,7 @@ module VespaRuby
       :order_by_value,
       :model_restrict,
       :model_sources,
-      :ranking_profile_value #: String
+      :rank_profile_value #: String
 
     def initialize
       @select_value ||= nil
@@ -23,7 +23,7 @@ module VespaRuby
       @order_by_value ||= nil
       @model_restrict ||= nil
       @model_sources ||= nil
-      @ranking_profile_value ||= nil
+      @rank_profile_value ||= nil
     end
 
     #: (*String) -> YqlQuery
@@ -74,8 +74,8 @@ module VespaRuby
     # When unset, Vespa scores with the schema's default profile (nativeRank).
     # See https://docs.vespa.ai/en/reference/query-api-reference.html#ranking.profile
     #: (String) -> YqlQuery
-    def ranking_profile(profile)
-      @ranking_profile_value = profile
+    def rank_profile(profile)
+      @rank_profile_value = profile
 
       self
     end
@@ -112,15 +112,15 @@ module VespaRuby
     end
 
     # Merge the fluent rank-profile (if set) onto any caller-supplied ranking hash.
-    # The explicit setter wins so `ranking_profile(...)` overrides a stale options entry,
+    # The explicit setter wins so `rank_profile(...)` overrides a stale options entry,
     # while the raw `options[:ranking]` escape hatch keeps working for other ranking.* keys.
     #: (Hash[untyped, untyped]) -> Hash[untyped, untyped]
     def build_ranking_hash(options = {})
       ranking = options[:ranking] || {}
 
-      return ranking unless @ranking_profile_value
+      return ranking unless @rank_profile_value
 
-      ranking.merge("ranking.profile": @ranking_profile_value)
+      ranking.merge("ranking.profile": @rank_profile_value)
     end
   end
 end

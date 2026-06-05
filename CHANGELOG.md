@@ -18,7 +18,7 @@
   `blank?`/`present?`. Previously the gem only required bare `active_support`,
   which does not load these core extensions, so it relied on Rails having loaded
   them globally.
-- Add `YqlQuery#ranking_profile` / `SimpleQuery#ranking_profile` fluent setter to
+- Add `YqlQuery#rank_profile` / `SimpleQuery#rank_profile` fluent setter to
   select a Vespa rank-profile (request param `ranking.profile`). Composes with the
   existing raw `options[:ranking]` escape hatch (the setter wins on conflict).
 - Dev toolchain: drop the `pry-byebug` development dependency; depend on `ostruct`,

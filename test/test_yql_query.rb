@@ -78,8 +78,8 @@ module VespaRuby
     end
 
     test "ranking.profile" do
-      q = YqlQuery.select.from.where("true").ranking_profile("bm25_anc_heavy")
-      assert_equal "bm25_anc_heavy", q.ranking_profile_value
+      q = YqlQuery.select.from.where("true").rank_profile("bm25_anc_heavy")
+      assert_equal "bm25_anc_heavy", q.rank_profile_value
 
       # rubocop:disable Style/HashSyntax
       expected = {:"ranking.profile" => "bm25_anc_heavy"}
@@ -92,8 +92,8 @@ module VespaRuby
       assert_equal({}, q.build_request.ranking)
     end
 
-    test "ranking_profile setter wins over raw options[:ranking] and preserves other ranking keys" do
-      q = YqlQuery.select.from.where("true").ranking_profile("winner")
+    test "rank_profile setter wins over raw options[:ranking] and preserves other ranking keys" do
+      q = YqlQuery.select.from.where("true").rank_profile("winner")
       req = q.build_request(options: {ranking: {"ranking.profile": "stale", "ranking.listFeatures": true}})
 
       # rubocop:disable Style/HashSyntax

@@ -44,7 +44,7 @@ response.children      # => array of hits, each with a "fields" hash
 
 ### Selecting a rank profile
 
-Use `ranking_profile` to score with a specific Vespa rank profile (the `ranking.profile`
+Use `rank_profile` to score with a specific Vespa rank profile (the `ranking.profile`
 request parameter). When unset, Vespa uses the schema's default profile. It composes with
 `default_index` (handy when a profile scores fields outside the default fieldset):
 
@@ -52,7 +52,7 @@ request parameter). When unset, Vespa uses the schema's default profile. It comp
 VespaRuby::SimpleQuery.query("meal break")
   .restrict("division")
   .default_index("ranktext")
-  .ranking_profile("bm25_anc_heavy")
+  .rank_profile("bm25_anc_heavy")
   .where(VespaRuby::WhereOp.contains("jurisdiction", "CA"))
   .build_request(options: { hits: 10 })
 ```
@@ -78,14 +78,14 @@ VespaRuby::YqlQuery
   .select("id", "name")
   .from("division")
   .where(VespaRuby::WhereOp.contains("name", "election"))
-  .ranking_profile("bm25_title3_anc2")
+  .rank_profile("bm25_title3_anc2")
   .build_request(options: { hits: 25 })
 ```
 
 ### Advanced: raw request options
 
 `build_request` accepts an `options` hash merged into the request body, so any parameter the
-gem doesn't wrap is still reachable. The `ranking_profile` setter is sugar over this and wins
+gem doesn't wrap is still reachable. The `rank_profile` setter is sugar over this and wins
 on conflict; other `ranking.*` keys you pass through are preserved:
 
 ```ruby
