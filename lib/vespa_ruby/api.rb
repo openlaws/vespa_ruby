@@ -3,6 +3,7 @@
 # rbs_inline: enabled
 
 require "faraday"
+require "openssl"
 
 module VespaRuby
   class Api
@@ -17,11 +18,23 @@ module VespaRuby
     attr_reader :conn #: ::Faraday::Connection
     attr_reader :debug #: bool
 
-    #: (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric) -> void
-    def initialize(host_url = nil, debug: false, timeout: DEFAULT_TIMEOUT, open_timeout: DEFAULT_OPEN_TIMEOUT)
-      @url = ENV["VESPA_URL"] || host_url || "http://localhost:8080"
+    # Resolution for url/cert/key is: explicit arg > VespaRuby.config > (url only)
+    # ENV["VESPA_URL"] > default. client_cert/client_key are PEM *contents*; when
+    # both are present mutual TLS is enabled (e.g. Vespa Cloud), otherwise the
+    # connection is plain HTTP — so local/self-hosted is unaffected.
+    #: (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric, ?client_cert: String?, ?client_key: String?) -> void
+    def initialize(host_url = nil, debug: false, timeout: DEFAULT_TIMEOUT, open_timeout: DEFAULT_OPEN_TIMEOUT,
+      client_cert: nil, client_key: nil)
+      cfg = VespaRuby.config
+      @url = host_url || cfg.url || ENV["VESPA_URL"] || "http://localhost:8080"
+      cert = client_cert || cfg.client_cert
+      key = client_key || cfg.client_key
 
-      @conn = Faraday.new(url: @url) do |builder|
+      options = {url: @url}
+      ssl = ssl_options(cert, key)
+      options[:ssl] = ssl if ssl
+
+      @conn = Faraday.new(**options) do |builder|
         builder.request :json
         builder.response :json
         builder.options.timeout = timeout
@@ -58,6 +71,21 @@ module VespaRuby
       response = @conn.post("/search/", post_body)
 
       VespaResponse.new(response)
+    end
+
+    private
+
+    # Build Faraday SSL options for mutual TLS when both a client cert and key
+    # (PEM contents) are given; nil otherwise (plain HTTP). OpenSSL::PKey.read
+    # handles EC and RSA keys.
+    #: (String?, String?) -> Hash[Symbol, untyped]?
+    def ssl_options(cert, key)
+      return nil if cert.nil? || cert.empty? || key.nil? || key.empty?
+
+      {
+        client_cert: OpenSSL::X509::Certificate.new(cert),
+        client_key: OpenSSL::PKey.read(key)
+      }
     end
   end
 end

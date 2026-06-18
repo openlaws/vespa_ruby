@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+## [0.4.0]
+
+- Add opt-in mutual TLS (mTLS) for Vespa Cloud and a `VespaRuby.configure` block.
+  `VespaRuby::Api.new` now accepts `client_cert:` / `client_key:` (PEM *contents*);
+  when both are present the Faraday connection presents a client certificate,
+  otherwise it stays plain HTTP (local/self-hosted unaffected).
+- Add `VespaRuby.configure { |c| c.url = ...; c.client_cert = ...; c.client_key = ... }`
+  for process-wide defaults (e.g. a Rails initializer). Resolution at `Api.new` is
+  explicit arg > config > (url only) `ENV["VESPA_URL"]` > default. `client_cert`/
+  `client_key` are sourced from config/args only — never read from ENV implicitly —
+  so one process can target plain-HTTP local and mTLS cloud without env juggling.
+
 ## [0.3.0] - 2026-06-03
 
 - **Breaking:** raise `required_ruby_version` to `>= 4.0.0` (was `>= 3.3.0`).

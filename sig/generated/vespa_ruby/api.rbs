@@ -16,8 +16,12 @@ module VespaRuby
 
     attr_reader debug: bool
 
-    # : (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric) -> void
-    def initialize: (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric) -> void
+    # Resolution for url/cert/key is: explicit arg > VespaRuby.config > (url only)
+    # ENV["VESPA_URL"] > default. client_cert/client_key are PEM *contents*; when
+    # both are present mutual TLS is enabled (e.g. Vespa Cloud), otherwise the
+    # connection is plain HTTP — so local/self-hosted is unaffected.
+    # : (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric, ?client_cert: String?, ?client_key: String?) -> void
+    def initialize: (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric, ?client_cert: String?, ?client_key: String?) -> void
 
     # See https://docs.vespa.ai/en/reference/healthchecks.html
     # : () -> bool
@@ -35,5 +39,13 @@ module VespaRuby
     # transport failure.
     # : (String) -> VespaResponse
     def raw_search_post: (String) -> VespaResponse
+
+    private
+
+    # Build Faraday SSL options for mutual TLS when both a client cert and key
+    # (PEM contents) are given; nil otherwise (plain HTTP). OpenSSL::PKey.read
+    # handles EC and RSA keys.
+    # : (String?, String?) -> Hash[Symbol, untyped]?
+    def ssl_options: (String?, String?) -> Hash[Symbol, untyped]?
   end
 end

@@ -9,7 +9,21 @@ require "active_support/core_ext/object/blank"
 
 module VespaRuby
   class Error < StandardError; end
-  # Your code goes here...
+
+  class << self
+    # Process-wide configuration (see VespaRuby::Configuration). Lazily created.
+    #: () -> Configuration
+    def config = (@config ||= Configuration.new)
+
+    # Set defaults, e.g. in a Rails initializer:
+    #   VespaRuby.configure { |c| c.url = ENV["VESPA_URL"]; c.client_cert = ... }
+    #: () { (Configuration) -> void } -> void
+    def configure = yield(config)
+
+    # Reset configuration to defaults (primarily for tests).
+    #: () -> void
+    def reset_config! = (@config = Configuration.new)
+  end
 end
 
 loader = Zeitwerk::Loader.for_gem

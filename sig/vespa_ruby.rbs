@@ -1,4 +1,7 @@
 module VespaRuby
   VERSION: String
-  # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+
+  def self.config: () -> Configuration
+  def self.configure: () { (Configuration) -> void } -> void
+  def self.reset_config!: () -> Configuration
 end

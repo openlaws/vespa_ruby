@@ -8,6 +8,26 @@ module VespaRuby
       @api = VespaRuby::Api.new
     end
 
+    def teardown
+      # Keep config/ENV from leaking between tests.
+      VespaRuby.reset_config!
+      ENV["VESPA_URL"] = nil
+    end
+
+    # Throwaway self-signed cert/key (PEM) for exercising the mTLS plumbing.
+    def throwaway_cert_and_key
+      key = OpenSSL::PKey::RSA.new(2048)
+      cert = OpenSSL::X509::Certificate.new
+      cert.version = 2
+      cert.serial = 1
+      cert.subject = cert.issuer = OpenSSL::X509::Name.parse("/CN=test")
+      cert.public_key = key.public_key
+      cert.not_before = Time.now - 60
+      cert.not_after = Time.now + 3600
+      cert.sign(key, OpenSSL::Digest.new("SHA256"))
+      [cert.to_pem, key.to_pem]
+    end
+
     test "initialize" do
       assert_kind_of VespaRuby::Api, @api
       assert @api.conn.is_a?(Faraday::Connection)
@@ -33,6 +53,39 @@ module VespaRuby
       assert_equal url, api.url
 
       ENV["VESPA_URL"] = nil
+    end
+
+    test "initialize without client cert leaves ssl unconfigured (plain HTTP)" do
+      api = VespaRuby::Api.new
+      assert_nil api.conn.ssl.client_cert
+      assert_nil api.conn.ssl.client_key
+    end
+
+    test "VespaRuby.configure sets url, client_cert and client_key" do
+      cert_pem, key_pem = throwaway_cert_and_key
+      VespaRuby.configure do |c|
+        c.url = "https://configured-host:8080"
+        c.client_cert = cert_pem
+        c.client_key = key_pem
+      end
+
+      api = VespaRuby::Api.new
+      assert_equal "https://configured-host:8080", api.url
+      assert_kind_of OpenSSL::X509::Certificate, api.conn.ssl.client_cert
+      assert_kind_of OpenSSL::PKey::PKey, api.conn.ssl.client_key
+    end
+
+    test "explicit cert/key args override config and enable mTLS" do
+      cert_pem, key_pem = throwaway_cert_and_key
+      api = VespaRuby::Api.new(client_cert: cert_pem, client_key: key_pem)
+      assert_kind_of OpenSSL::X509::Certificate, api.conn.ssl.client_cert
+      assert_kind_of OpenSSL::PKey::PKey, api.conn.ssl.client_key
+    end
+
+    test "host_url arg overrides configured url" do
+      VespaRuby.configure { |c| c.url = "https://configured-host:8080" }
+      api = VespaRuby::Api.new("https://explicit-host:8080")
+      assert_equal "https://explicit-host:8080", api.url
     end
 
     # Uses VCR test/cassettes/test_api

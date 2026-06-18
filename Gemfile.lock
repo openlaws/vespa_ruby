@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    vespa_ruby (0.3.0)
+    vespa_ruby (0.4.0)
       activesupport
       faraday (< 3.a)
       logging
