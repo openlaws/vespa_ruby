@@ -16,12 +16,14 @@ module VespaRuby
 
     attr_reader debug: bool
 
-    # Resolution for url/cert/key is: explicit arg > VespaRuby.config > (url only)
-    # ENV["VESPA_URL"] > default. client_cert/client_key are PEM *contents*; when
-    # both are present mutual TLS is enabled (e.g. Vespa Cloud), otherwise the
-    # connection is plain HTTP — so local/self-hosted is unaffected.
-    # : (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric, ?client_cert: String?, ?client_key: String?) -> void
-    def initialize: (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric, ?client_cert: String?, ?client_key: String?) -> void
+    # Resolution for url/cert/key/token is: explicit arg > VespaRuby.config > (url
+    # only) ENV["VESPA_URL"] > default. client_cert/client_key are PEM *contents*;
+    # when both are present mutual TLS is enabled (e.g. Vespa Cloud). token is a
+    # Vespa Cloud data-plane access token sent as `Authorization: Bearer <token>`
+    # (an alternative to mTLS, used against the token endpoint). With none of these
+    # the connection is plain HTTP — so local/self-hosted is unaffected.
+    # : (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric, ?client_cert: String?, ?client_key: String?, ?token: String?) -> void
+    def initialize: (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric, ?client_cert: String?, ?client_key: String?, ?token: String?) -> void
 
     # See https://docs.vespa.ai/en/reference/healthchecks.html
     # : () -> bool
@@ -47,5 +49,10 @@ module VespaRuby
     # handles EC and RSA keys.
     # : (String?, String?) -> Hash[Symbol, untyped]?
     def ssl_options: (String?, String?) -> Hash[Symbol, untyped]?
+
+    # Build the Authorization header for a Vespa Cloud data-plane access token, or
+    # nil when no token is given.
+    # : (String?) -> Hash[String, String]?
+    def token_headers: (String?) -> Hash[String, String]?
   end
 end

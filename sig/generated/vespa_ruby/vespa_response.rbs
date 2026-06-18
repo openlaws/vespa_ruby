@@ -2,13 +2,15 @@
 
 module VespaRuby
   class VespaResponse
-    attr_reader children: Array[String]?
+    attr_reader children: Array[untyped]?
 
     attr_reader request_body: String?
 
     attr_reader reason_phrase: String?
 
-    attr_reader json: Hash[String, untyped]
+    attr_reader json: Hash[String, untyped]?
+
+    attr_reader raw_body: untyped
 
     attr_reader status: int?
 

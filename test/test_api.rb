@@ -82,6 +82,20 @@ module VespaRuby
       assert_kind_of OpenSSL::PKey::PKey, api.conn.ssl.client_key
     end
 
+    test "no token leaves the Authorization header unset" do
+      assert_nil VespaRuby::Api.new.conn.headers["Authorization"]
+    end
+
+    test "token arg sets the Bearer Authorization header" do
+      api = VespaRuby::Api.new(token: "tok-abc")
+      assert_equal "Bearer tok-abc", api.conn.headers["Authorization"]
+    end
+
+    test "VespaRuby.configure token sets the Bearer Authorization header" do
+      VespaRuby.configure { |c| c.token = "tok-cfg" }
+      assert_equal "Bearer tok-cfg", VespaRuby::Api.new.conn.headers["Authorization"]
+    end
+
     test "host_url arg overrides configured url" do
       VespaRuby.configure { |c| c.url = "https://configured-host:8080" }
       api = VespaRuby::Api.new("https://explicit-host:8080")

@@ -18,21 +18,26 @@ module VespaRuby
     attr_reader :conn #: ::Faraday::Connection
     attr_reader :debug #: bool
 
-    # Resolution for url/cert/key is: explicit arg > VespaRuby.config > (url only)
-    # ENV["VESPA_URL"] > default. client_cert/client_key are PEM *contents*; when
-    # both are present mutual TLS is enabled (e.g. Vespa Cloud), otherwise the
-    # connection is plain HTTP — so local/self-hosted is unaffected.
-    #: (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric, ?client_cert: String?, ?client_key: String?) -> void
+    # Resolution for url/cert/key/token is: explicit arg > VespaRuby.config > (url
+    # only) ENV["VESPA_URL"] > default. client_cert/client_key are PEM *contents*;
+    # when both are present mutual TLS is enabled (e.g. Vespa Cloud). token is a
+    # Vespa Cloud data-plane access token sent as `Authorization: Bearer <token>`
+    # (an alternative to mTLS, used against the token endpoint). With none of these
+    # the connection is plain HTTP — so local/self-hosted is unaffected.
+    #: (?String?, ?debug: bool, ?timeout: Numeric, ?open_timeout: Numeric, ?client_cert: String?, ?client_key: String?, ?token: String?) -> void
     def initialize(host_url = nil, debug: false, timeout: DEFAULT_TIMEOUT, open_timeout: DEFAULT_OPEN_TIMEOUT,
-      client_cert: nil, client_key: nil)
+      client_cert: nil, client_key: nil, token: nil)
       cfg = VespaRuby.config
       @url = host_url || cfg.url || ENV["VESPA_URL"] || "http://localhost:8080"
       cert = client_cert || cfg.client_cert
       key = client_key || cfg.client_key
+      tok = token || cfg.token
 
       options = {url: @url}
       ssl = ssl_options(cert, key)
       options[:ssl] = ssl if ssl
+      headers = token_headers(tok)
+      options[:headers] = headers if headers
 
       @conn = Faraday.new(**options) do |builder|
         builder.request :json
@@ -86,6 +91,15 @@ module VespaRuby
         client_cert: OpenSSL::X509::Certificate.new(cert),
         client_key: OpenSSL::PKey.read(key)
       }
+    end
+
+    # Build the Authorization header for a Vespa Cloud data-plane access token, or
+    # nil when no token is given.
+    #: (String?) -> Hash[String, String]?
+    def token_headers(token)
+      return nil if token.nil? || token.empty?
+
+      {"Authorization" => "Bearer #{token}"}
     end
   end
 end

@@ -1,5 +1,18 @@
 ## [Unreleased]
 
+## [0.5.0]
+
+- Add Vespa Cloud **data-plane access token** support (alternative to mTLS).
+  `VespaRuby::Api.new(token:)` and `VespaRuby.configure { |c| c.token = ... }` set
+  an `Authorization: Bearer <token>` header on every request. Resolution mirrors
+  the other settings (explicit arg > config). Token auth targets Vespa Cloud's
+  token endpoint; mTLS and token can be configured independently.
+- Fix `VespaResponse` raising (`NoMethodError` on `String#dig`) when the response
+  body isn't parsed JSON — e.g. a 403 from Vespa Cloud's data plane with a plain-text
+  body. Such completed exchanges now return a `VespaResponse` with `#status` set
+  (per the documented contract); the unparsed body is exposed via `#raw_body` and
+  `#json` is nil.
+
 ## [0.4.0]
 
 - Add opt-in mutual TLS (mTLS) for Vespa Cloud and a `VespaRuby.configure` block.
