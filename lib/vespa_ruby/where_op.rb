@@ -39,7 +39,9 @@ module VespaRuby
     def self.wand(arguments, annotations: {})
       raise ArgumentError("wand requires at least two arguments") unless arguments.is_a?(Array) && arguments.length > 1
 
-      phrase = "wand(#{arguments.map(&:to_s).join(", ")})"
+      # map(&:to_s) keeps nested [term, weight] pairs bracketed; a bare join would
+      # flatten them ("[11, 1], [37, 2]" vs "11, 1, 37, 2"), so the cop is wrong here.
+      phrase = "wand(#{arguments.map(&:to_s).join(", ")})" # standard:disable Style/MapJoin
 
       annotations.empty? ? phrase : build_annotations(annotations, phrase)
     end
