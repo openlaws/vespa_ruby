@@ -63,6 +63,10 @@ module VespaRuby
       assert_equal "wand(description, [[11, 1], [37, 2]])", op_wand
     end
 
+    test "wand raises ArgumentError with fewer than two arguments" do
+      assert_raises(ArgumentError) { WhereOp.wand(["description"]) }
+    end
+
     test "weak_and" do
       op_weak_and = WhereOp.weak_and(VespaRuby::WhereOp.contains("a", "A"), WhereOp.contains("b", "B"))
       assert_equal "weakAnd(a contains \"A\", b contains \"B\")", op_weak_and

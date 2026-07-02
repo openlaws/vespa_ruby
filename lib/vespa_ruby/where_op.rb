@@ -37,9 +37,14 @@ module VespaRuby
 
     #: (Array[untyped], Hash[untyped, untyped]) -> String
     def self.wand(arguments, annotations: {})
-      raise ArgumentError("wand requires at least two arguments") unless arguments.is_a?(Array) && arguments.length > 1
+      raise ArgumentError.new("wand requires at least two arguments") unless arguments.is_a?(Array) && arguments.length > 1
 
+      # map(&:to_s) is required, not redundant: arguments may hold nested arrays (e.g. a
+      # weighted set like [[11, 1], [37, 2]]), and bare Array#join would recursively join
+      # those with the same separator ("11, 1, 37, 2") instead of stringifying them whole.
+      # rubocop:disable Style/MapJoin
       phrase = "wand(#{arguments.map(&:to_s).join(", ")})"
+      # rubocop:enable Style/MapJoin
 
       annotations.empty? ? phrase : build_annotations(annotations, phrase)
     end

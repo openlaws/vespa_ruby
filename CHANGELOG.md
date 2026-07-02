@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [0.5.1]
+
+- Fix `WhereOp.wand` raising `NoMethodError` instead of `ArgumentError` on fewer than two
+  arguments (`ArgumentError(...)` called the class as a method; now `ArgumentError.new(...)`).
+
 ## [0.5.0]
 
 - Add Vespa Cloud **data-plane access token** support (alternative to mTLS).
