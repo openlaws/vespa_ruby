@@ -16,7 +16,17 @@ module VespaRuby
 
     #: (String) -> String
     def double_quoted_string(original)
-      unquoted?(original) ? original : "\"#{original}\""
+      unquoted?(original) ? original : "\"#{escape_yql_string(original)}\""
+    end
+
+    # Escape the characters that would otherwise let a value break out of a
+    # double-quoted YQL string literal: a bare `"` closes the literal and a bare
+    # `\` starts an escape sequence. Without this, an attacker-supplied field
+    # value (e.g. a caller passing user input as a `contains` argument) can inject
+    # arbitrary YQL. Backslash-prefix both in a single pass over the original.
+    #: (String) -> String
+    def escape_yql_string(original)
+      original.to_s.gsub(/[\\"]/) { |char| "\\#{char}" }
     end
 
     #: (Numeric|TrueClass|FalseClass|String) -> bool
@@ -29,7 +39,7 @@ module VespaRuby
 
     #: (Array[String]) -> Array[String]
     def quoted_array(original)
-      original.collect { |v| "\"#{v}\"" }
+      original.collect { |v| "\"#{escape_yql_string(v)}\"" }
     end
 
     # See https://docs.vespa.ai/en/reference/query-language-reference.html#annotations

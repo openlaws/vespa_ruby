@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+## [0.5.2]
+
+- **Security:** escape `"` and `\` in double-quoted YQL string literals
+  (`QueryHelper#double_quoted_string` and `#quoted_array`). Previously a value
+  containing a double quote — e.g. a caller passing user input as a `WhereOp.contains`,
+  `WhereOp.in`, or `WhereOp.phrase` argument — could break out of the string literal and
+  inject arbitrary YQL into the `where` clause. The free-text `model.queryString`
+  (`userQuery()`) path was never affected; this only concerns values interpolated into
+  the YQL string itself.
+
 ## [0.5.1]
 
 - Fix `WhereOp.wand` raising `NoMethodError` instead of `ArgumentError` on fewer than two
