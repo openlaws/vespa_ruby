@@ -8,6 +8,14 @@ module VespaRuby
     # : (String) -> String
     def double_quoted_string: (String) -> String
 
+    # Escape the characters that would otherwise let a value break out of a
+    # double-quoted YQL string literal: a bare `"` closes the literal and a bare
+    # `\` starts an escape sequence. Without this, an attacker-supplied field
+    # value (e.g. a caller passing user input as a `contains` argument) can inject
+    # arbitrary YQL. Backslash-prefix both in a single pass over the original.
+    # : (String) -> String
+    def escape_yql_string: (String) -> String
+
     # : (Numeric|TrueClass|FalseClass|String) -> bool
     def unquoted?: (Numeric | TrueClass | FalseClass | String) -> bool
 

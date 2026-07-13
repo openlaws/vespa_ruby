@@ -34,6 +34,25 @@ module VespaRuby
       assert_equal "\"abc\"", result
     end
 
+    test "double_quoted_string escapes embedded quotes and backslashes" do
+      # A bare " would close the literal and inject YQL; it must be backslash-escaped.
+      assert_equal "\"a\\\"b\"", @dummy.double_quoted_string("a\"b")
+      # A bare \ starts an escape sequence; it must itself be escaped.
+      assert_equal "\"a\\\\b\"", @dummy.double_quoted_string("a\\b")
+      # The canonical injection attempt: break out and OR in a new clause.
+      assert_equal "\"A\\\" or lawKey contains \\\"B\"",
+        @dummy.double_quoted_string("A\" or lawKey contains \"B")
+    end
+
+    test "escape_yql_string leaves ordinary values untouched" do
+      assert_equal "CA-STAT", @dummy.escape_yql_string("CA-STAT")
+      assert_equal "title_15.division_1.chapter_1", @dummy.escape_yql_string("title_15.division_1.chapter_1")
+    end
+
+    test "quoted_array escapes each element" do
+      assert_equal ["\"a\\\"b\"", "\"c\\\\d\""], @dummy.quoted_array(["a\"b", "c\\d"])
+    end
+
     test "unquoted?" do
       refute @dummy.unquoted?("a")
 

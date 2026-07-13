@@ -10,6 +10,17 @@ module VespaRuby
       assert_equal "a contains 1", op_contains_num
     end
 
+    test "contains escapes a value that tries to break out of the string literal" do
+      # Without escaping this injects a second clause: a contains "x" or true or "".
+      op = WhereOp.contains("a", "x\" or true or \"")
+      assert_equal "a contains \"x\\\" or true or \\\"\"", op
+    end
+
+    test "in escapes string members" do
+      op = WhereOp.in("lawKey", ["CA-STAT", "x\" or true or \""])
+      assert_equal "lawKey in (\"CA-STAT\", \"x\\\" or true or \\\"\")", op
+    end
+
     # NOTE: no test for annotated non-String values as there are no valid use cases yet. It looks like the intention was
     # for numeric values, but the interface can also be used with custom objects that implement their own to_s. As a
     # side note, functions could also be on the right side. I think it would make sense in that case to implement as a
