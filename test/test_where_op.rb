@@ -6,8 +6,18 @@ module VespaRuby
       op_contains = WhereOp.contains("a", "A")
       assert_equal "a contains \"A\"", op_contains
 
-      op_contains_num = WhereOp.contains("a", 1)
-      assert_equal "a contains 1", op_contains_num
+      # Vespa rejects a bare number or boolean after contains and matches the quoted
+      # form against int and bool fields.
+      assert_equal "a contains \"1\"", WhereOp.contains("a", 1)
+      assert_equal "a contains \"true\"", WhereOp.contains("a", "true")
+      assert_equal "a contains \"false\"", WhereOp.contains("a", false)
+      assert_equal "a contains \"b\"", WhereOp.contains("a", :b)
+    end
+
+    test "contains raises on nil and collections instead of writing their to_s" do
+      assert_raises(ArgumentError) { WhereOp.contains("a", nil) }
+      assert_raises(ArgumentError) { WhereOp.contains("a", ["x\" or true or \""]) }
+      assert_raises(ArgumentError) { WhereOp.contains("a", {b: 1}) }
     end
 
     test "contains escapes a value that tries to break out of the string literal" do
@@ -97,6 +107,28 @@ module VespaRuby
       assert_equal "string_field in (\"germany\", \"france\", \"norway\")", op_in_string
     end
 
+    test "in raises on an empty set" do
+      assert_raises(ArgumentError) { WhereOp.in("string_field", []) }
+    end
+
+    test "uri emits Vespa's uri() with an escaped literal" do
+      assert_equal "uri(\"https://x.example/a\\\"b\")", WhereOp.uri("https://x.example/a\"b")
+    end
+
+    test "eq escapes strings and writes numbers and booleans bare" do
+      assert_equal "a = \"x\\\" or true or \\\"\"", WhereOp.eq("a", "x\" or true or \"")
+      assert_equal "a = 5", WhereOp.eq("a", 5)
+      assert_equal "a = true", WhereOp.eq("a", true)
+      assert_raises(ArgumentError) { WhereOp.eq("a", nil) }
+    end
+
+    test "comparisons accept only numbers" do
+      assert_equal "a < 5", WhereOp.lt("a", 5)
+      assert_equal "a >= -1.5", WhereOp.gte("a", "-1.5")
+      assert_raises(ArgumentError) { WhereOp.lt("a", "5 or true") }
+      assert_raises(ArgumentError) { WhereOp.gt("a", "5\n or true") }
+    end
+
     test "rank" do
       op_rank = WhereOp.rank(WhereOp.contains("a", "A"), WhereOp.contains("b", "B"), WhereOp.contains("c", "C"))
       assert_equal "rank(a contains \"A\", b contains \"B\", c contains \"C\")", op_rank
@@ -117,6 +149,11 @@ module VespaRuby
       assert_equal "range(field, -Infinity, 10)", VespaRuby::WhereOp.range("field", "-Infinity", 10)
       assert_equal "range(field, 1, Infinity)", VespaRuby::WhereOp.range("field", 1, "Infinity")
       assert_equal "range(field, -Infinity, Infinity)", VespaRuby::WhereOp.range("field", "-Infinity", "Infinity")
+    end
+
+    test "range rejects a bound with a line break (^/$ would match its first line)" do
+      assert_raises(ArgumentError) { VespaRuby::WhereOp.range("field", "5\n) or true or range(x, 0", 10) }
+      assert_raises(ArgumentError) { VespaRuby::WhereOp.range("field", 1, "Infinity\n") }
     end
 
     test "range_with_invalid_lower_bound" do

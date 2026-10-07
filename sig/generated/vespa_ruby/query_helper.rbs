@@ -16,6 +16,11 @@ module VespaRuby
     # : (String) -> String
     def escape_yql_string: (String) -> String
 
+    # A double-quoted, escaped string literal for a scalar value. nil and collections
+    # raise instead of writing their to_s into the YQL.
+    # : (String|Symbol|Numeric|bool) -> String
+    def quoted_value: (String | Symbol | Numeric | bool) -> String
+
     # : (Numeric|TrueClass|FalseClass|String) -> bool
     def unquoted?: (Numeric | TrueClass | FalseClass | String) -> bool
 

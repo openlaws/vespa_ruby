@@ -5,8 +5,11 @@ module VespaRuby
   module WhereOp
     extend QueryHelper
 
-    # : (String, untyped, Hash[untyped, untyped]) -> String
-    def self.contains: (String, untyped, Hash[untyped, untyped]) -> String
+    # The value is always a quoted, escaped string literal: Vespa rejects a bare
+    # number or boolean after contains ("Cannot cast java.lang.Integer to
+    # java.lang.String") and matches "5" and "true" against int and bool fields.
+    # : (String, String|Symbol|Numeric|bool, Hash[untyped, untyped]) -> String
+    def self.contains: (String, String | Symbol | Numeric | bool, Hash[untyped, untyped]) -> String
 
     # : (String, String) -> String
     def self.and: (String, String) -> String
@@ -14,18 +17,27 @@ module VespaRuby
     # : (String, String) -> String
     def self.or: (String, String) -> String
 
+    # The arguments are YQL (field names, query inputs, clauses), written as given:
+    # never pass request input.
     # : (String, String, Hash[untyped, untyped]) -> String
     def self.nearest_neighbor: (String, String, Hash[untyped, untyped]) -> String
 
+    # The arguments are YQL (field names, query inputs, clauses), written as given:
+    # never pass request input.
     # : (Array[untyped], Hash[untyped, untyped]) -> String
     def self.wand: (Array[untyped], Hash[untyped, untyped]) -> String
 
+    # The arguments are YQL (field names, query inputs, clauses), written as given:
+    # never pass request input.
     # : (String, String, Hash[untyped, untyped]) -> String
     def self.weak_and: (String, String, Hash[untyped, untyped]) -> String
 
-    # Split apart match and ranking arguments for usability
+    # Split apart match and ranking arguments for usability. The arguments are YQL
+    # clauses, written as given: never pass request input.
     def self.rank: (untyped match_argument, *untyped ranking_arguments) -> untyped
 
+    # input is a YQL expression, written as given: never pass request input (send it
+    # as a request parameter and pass "@name").
     # : (String) -> String
     def self.user_input: (String) -> String
 
@@ -48,6 +60,7 @@ module VespaRuby
     # : (Array[String]) -> String
     def self.phrase: (Array[String]) -> String
 
+    # Vespa's operator is uri(); url( is a YQL syntax error.
     # : (String) -> String
     def self.uri: (String) -> String
 

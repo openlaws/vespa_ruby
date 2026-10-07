@@ -7,9 +7,12 @@ module VespaRuby
   module WhereOp
     extend QueryHelper
 
-    #: (String, untyped, Hash[untyped, untyped]) -> String
+    # The value is always a quoted, escaped string literal: Vespa rejects a bare
+    # number or boolean after contains ("Cannot cast java.lang.Integer to
+    # java.lang.String") and matches "5" and "true" against int and bool fields.
+    #: (String, String|Symbol|Numeric|bool, Hash[untyped, untyped]) -> String
     def self.contains(left, right, annotations: {})
-      right_value = right.is_a?(String) ? double_quoted_string(right) : right.to_s
+      right_value = quoted_value(right)
       right_value = build_annotations(annotations, right_value) unless annotations.empty?
       "#{left} contains #{right_value}"
     end
@@ -28,6 +31,8 @@ module VespaRuby
       "(#{terms.join(" or ")})"
     end
 
+    # The arguments are YQL (field names, query inputs, clauses), written as given:
+    # never pass request input.
     #: (String, String, Hash[untyped, untyped]) -> String
     def self.nearest_neighbor(doc_vector, query_vector, annotations: {})
       phrase = "nearestNeighbor(#{doc_vector}, #{query_vector})"
@@ -35,6 +40,8 @@ module VespaRuby
       annotations.empty? ? phrase : build_annotations(annotations, phrase)
     end
 
+    # The arguments are YQL (field names, query inputs, clauses), written as given:
+    # never pass request input.
     #: (Array[untyped], Hash[untyped, untyped]) -> String
     def self.wand(arguments, annotations: {})
       raise ArgumentError.new("wand requires at least two arguments") unless arguments.is_a?(Array) && arguments.length > 1
@@ -49,6 +56,8 @@ module VespaRuby
       annotations.empty? ? phrase : build_annotations(annotations, phrase)
     end
 
+    # The arguments are YQL (field names, query inputs, clauses), written as given:
+    # never pass request input.
     #: (String, String, Hash[untyped, untyped]) -> String
     def self.weak_and(left, right, annotations: {})
       phrase = "weakAnd(#{left}, #{right})"
@@ -56,13 +65,16 @@ module VespaRuby
       annotations.empty? ? phrase : build_annotations(annotations, phrase)
     end
 
-    # Split apart match and ranking arguments for usability
+    # Split apart match and ranking arguments for usability. The arguments are YQL
+    # clauses, written as given: never pass request input.
     def self.rank(match_argument, *ranking_arguments)
       return "rank(#{match_argument})" if ranking_arguments.empty?
 
       "rank(#{match_argument}, #{ranking_arguments.join(", ")})"
     end
 
+    # input is a YQL expression, written as given: never pass request input (send it
+    # as a request parameter and pass "@name").
     #: (String) -> String
     def self.user_input(input)
       "userInput(#{input})"
@@ -73,6 +85,9 @@ module VespaRuby
     # where string_field in (@string_values)&string_values=germany,france,norway
     #: (String, Array[String|Integer]) -> String
     def self.in(value, set)
+      # in () is a YQL syntax error.
+      raise ArgumentError.new("in() requires at least one value") if set.empty?
+
       # Do not wrap Integers in quotes
       return "#{value} in (#{set.join(", ")})" if set.all? { |v| v.is_a?(Integer) }
 
@@ -96,7 +111,7 @@ module VespaRuby
 
     #: (String|Numeric) -> bool
     def self.valid_numeric_or_number_string?(number)
-      number.is_a?(Numeric) || (number.is_a?(String) && /^-?(Infinity|\d+(\.\d+)?)$/.match?(number))
+      number.is_a?(Numeric) || (number.is_a?(String) && /\A-?(Infinity|\d+(\.\d+)?)\z/.match?(number))
     end
 
     #: (Array[String]) -> String
@@ -104,39 +119,48 @@ module VespaRuby
       "phrase(#{quoted_array(term_array).join(", ")})"
     end
 
+    # Vespa's operator is uri(); url( is a YQL syntax error.
     #: (String) -> String
     def self.uri(uri)
-      "url(\"#{uri}\")"
+      "uri(#{quoted_value(uri)})"
     end
 
     # TODO: Not great support below since its difficult to figure out field names from strings
 
     #: (String|Numeric, Numeric) -> String
     def self.lt(left, right)
+      raise ArgumentError.new("Invalid lt value") unless valid_numeric_or_number_string?(right)
+
       "#{left} < #{right}"
     end
 
     #: (String|Numeric, Numeric) -> String
     def self.lte(left, right)
+      raise ArgumentError.new("Invalid lte value") unless valid_numeric_or_number_string?(right)
+
       "#{left} <= #{right}"
     end
 
     #: (String|Numeric, Numeric) -> String
     def self.gt(left, right)
+      raise ArgumentError.new("Invalid gt value") unless valid_numeric_or_number_string?(right)
+
       "#{left} > #{right}"
     end
 
     #: (String|Numeric, Numeric) -> String
     def self.gte(left, right)
+      raise ArgumentError.new("Invalid gte value") unless valid_numeric_or_number_string?(right)
+
       "#{left} >= #{right}"
     end
 
     # String value must go on the right. We can't tell the difference between field names and values.
     #: (String, String|Numeric) -> String
     def self.eq(left, right)
-      return "#{left} = \"#{right}\"" if right.is_a?(String)
+      return "#{left} = #{right}" if right.is_a?(Numeric) || right == true || right == false
 
-      "#{left} = #{right}"
+      "#{left} = #{quoted_value(right)}"
     end
   end
 end

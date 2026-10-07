@@ -1,5 +1,29 @@
 ## [Unreleased]
 
+## [0.5.3]
+
+Every change below turns YQL that Vespa rejected (or that could carry injected YQL)
+into valid, escaped YQL. Queries that worked on 0.5.2 render the same, except that a
+comparison value given as a String must now be a plain decimal (`lt(f, "1e5")` raises;
+pass the Numeric).
+
+- **Security:** `WhereOp.range` and `lt`/`lte`/`gt`/`gte` accept only a number or a
+  number string (`-Infinity`/`Infinity` included) matched against the whole string.
+  `range` checked bounds with `^…$`, so a bound with a line break (`"5\n) or true or …"`)
+  passed; the comparisons didn't check their value at all.
+- **Security:** `WhereOp.eq` and `WhereOp.uri` escape their string values like
+  `contains`.
+- `WhereOp.contains` writes every value as a quoted string literal. Vespa rejects a bare
+  number or boolean after `contains` ("Cannot cast java.lang.Integer to
+  java.lang.String") and matches `"5"` and `"true"` against int and bool fields, so
+  `contains(field, 5)`, `contains(field, true)`, and the String `"true"` now work instead
+  of failing. `nil`, Arrays, and Hashes raise `ArgumentError` instead of writing their
+  `to_s` into the YQL.
+- `WhereOp.uri` emits Vespa's `uri(…)`; `url(…)` was a YQL syntax error.
+- `WhereOp.in` raises `ArgumentError` on an empty set; `in ()` was a YQL syntax error.
+- Documented that `rank`, `user_input`, `wand`, `weak_and`, and `nearest_neighbor` take
+  YQL, written as given.
+
 ## [0.5.2]
 
 - **Security:** escape `"` and `\` in double-quoted YQL string literals

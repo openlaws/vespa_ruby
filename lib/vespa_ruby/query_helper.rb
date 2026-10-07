@@ -29,6 +29,17 @@ module VespaRuby
       original.to_s.gsub(/[\\"]/) { |char| "\\#{char}" }
     end
 
+    # A double-quoted, escaped string literal for a scalar value. nil and collections
+    # raise instead of writing their to_s into the YQL.
+    #: (String|Symbol|Numeric|bool) -> String
+    def quoted_value(value)
+      unless value.is_a?(String) || value.is_a?(Symbol) || value.is_a?(Numeric) || value == true || value == false
+        raise ArgumentError.new("Expected a String, Symbol, Numeric, or boolean value, got #{value.inspect}")
+      end
+
+      "\"#{escape_yql_string(value.to_s)}\""
+    end
+
     #: (Numeric|TrueClass|FalseClass|String) -> bool
     def unquoted?(element)
       element.is_a?(Numeric) ||
