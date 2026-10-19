@@ -2,6 +2,20 @@
 
 module VespaRuby
   module QueryHelper
+    # A YQL identifier (https://github.com/vespa-engine/vespa/blob/master/container-search/src/main/antlr4/com/yahoo/search/yql/yqlplus.g4).
+    IDENTIFIER: ::Regexp
+
+    # An annotation key: an identifier, dotted for a nested one (hnsw.exploreAdditionalHits).
+    ANNOTATION_KEY: ::Regexp
+
+    # A YQL number literal (its INT and FLOAT tokens: an optional "-", an exponent, and a
+    # leading "." are allowed, a leading "+" is not), Infinity, or a request parameter
+    # reference (@name).
+    NUMBER_STRING: ::Regexp
+
+    # The named escapes a YQL string literal accepts for control characters.
+    CONTROL_ESCAPES: untyped
+
     # : (Array[String], String?)
     def handle_splat: (untyped arg_array, ?default: untyped) -> untyped
 
@@ -12,7 +26,8 @@ module VespaRuby
     # double-quoted YQL string literal: a bare `"` closes the literal and a bare
     # `\` starts an escape sequence. Without this, an attacker-supplied field
     # value (e.g. a caller passing user input as a `contains` argument) can inject
-    # arbitrary YQL. Backslash-prefix both in a single pass over the original.
+    # arbitrary YQL. Control characters are written with the escapes YQL accepts
+    # (\n, \t, \u0000, …) so a line break or NUL can't produce a parse error.
     # : (String) -> String
     def escape_yql_string: (String) -> String
 
@@ -24,11 +39,29 @@ module VespaRuby
     # : (Numeric|TrueClass|FalseClass|String) -> bool
     def unquoted?: (Numeric | TrueClass | FalseClass | String) -> bool
 
-    # : (Array[String]) -> Array[String]
-    def quoted_array: (Array[String]) -> Array[String]
+    # Each element as a quoted, escaped string literal (see quoted_value: nil and
+    # collections raise).
+    # : (Array[String|Symbol|Numeric|bool]) -> Array[String]
+    def quoted_array: (Array[String | Symbol | Numeric | bool]) -> Array[String]
+
+    # The YQL text of a number: an Integer, a Float (not NaN), a BigDecimal (whose to_s,
+    # "0.15e1", isn't YQL), or a String holding a number literal, Infinity, or a request
+    # parameter reference (@name). Anything else (nil, NaN, Rational, Complex, other text)
+    # raises instead of writing its to_s into the YQL.
+    # : (untyped, ?String) -> String
+    def number_literal: (untyped, ?String) -> String
 
     # See https://docs.vespa.ai/en/reference/query-language-reference.html#annotations
-    # : (Hash[untyped, untyped], String?)
-    def build_annotations: (untyped hash, ?untyped phrase) -> untyped
+    # Keys must be YQL identifiers (dotted allowed). Values are numbers, booleans,
+    # Strings and Symbols (quoted and escaped), nested Hashes, or Arrays of those;
+    # anything else raises instead of writing its to_s into the YQL.
+    # : (Hash[untyped, untyped], String?) -> String
+    def build_annotations: (Hash[untyped, untyped], String?) -> String
+
+    # : (untyped) -> String
+    def annotation_key: (untyped) -> String
+
+    # : (untyped) -> String
+    def annotation_value: (untyped) -> String
   end
 end

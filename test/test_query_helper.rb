@@ -49,8 +49,16 @@ module VespaRuby
       assert_equal "title_15.division_1.chapter_1", @dummy.escape_yql_string("title_15.division_1.chapter_1")
     end
 
-    test "quoted_array escapes each element" do
+    test "escape_yql_string writes control characters with the escapes YQL accepts" do
+      assert_equal "a\\nb\\tc\\u0000d\\re\\bf\\fg\\u001bh", @dummy.escape_yql_string("a\nb\tc\0d\re\bf\fg\eh")
+      assert_equal "\"x\\n\"", @dummy.double_quoted_string("x\n")
+    end
+
+    test "quoted_array escapes each element and rejects nil and collections" do
       assert_equal ["\"a\\\"b\"", "\"c\\\\d\""], @dummy.quoted_array(["a\"b", "c\\d"])
+      assert_equal ["\"1\"", "\"s\"", "\"true\""], @dummy.quoted_array([1, :s, true])
+      assert_raises(ArgumentError) { @dummy.quoted_array(["a", nil]) }
+      assert_raises(ArgumentError) { @dummy.quoted_array([["a"]]) }
     end
 
     test "unquoted?" do

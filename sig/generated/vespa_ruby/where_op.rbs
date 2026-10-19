@@ -44,40 +44,52 @@ module VespaRuby
     # TODO: Consider implementing more optimal parameter substitution
     # where integer_field in (@integer_values)&integer_values=10,20,30
     # where string_field in (@string_values)&string_values=germany,france,norway
-    # : (String, Array[String|Integer]) -> String
-    def self.in: (String, Array[String | Integer]) -> String
+    # : (String, Array[String|Symbol|Numeric|bool]) -> String
+    def self.in: (String, Array[String | Symbol | Numeric | bool]) -> String
 
     # : (String) -> String
     def self.not: (String) -> String
 
     # range() lower and upper bounds are inclusive. "-Infinity" and "Infinity" are valid values.
+    # Each bound is a number, a number string, or a request parameter reference ("@name");
+    # see QueryHelper#number_literal.
     # : (String, String|Numeric, String|Numeric, Hash[untyped, untyped]) -> String
     def self.range: (String, String | Numeric, String | Numeric, Hash[untyped, untyped]) -> String
 
-    # : (String|Numeric) -> bool
-    def self.valid_numeric_or_number_string?: (String | Numeric) -> bool
+    # Whether NUMBER is something range and the comparisons write; see
+    # QueryHelper#number_literal.
+    # : (untyped) -> bool
+    def self.valid_numeric_or_number_string?: (untyped) -> bool
 
-    # : (Array[String]) -> String
-    def self.phrase: (Array[String]) -> String
+    # Every term is a quoted, escaped string literal; nil and collections raise.
+    # : (Array[String|Symbol|Numeric|bool]) -> String
+    def self.phrase: (Array[String | Symbol | Numeric | bool]) -> String
 
     # Vespa's operator is uri(); url( is a YQL syntax error.
     # : (String) -> String
     def self.uri: (String) -> String
 
-    # : (String|Numeric, Numeric) -> String
-    def self.lt: (String | Numeric, Numeric) -> String
+    # The right side of lt/lte/gt/gte is a number, a number string, or a request
+    # parameter reference ("@name"); see QueryHelper#number_literal.
+    # : (String|Numeric, String|Numeric) -> String
+    def self.lt: (String | Numeric, String | Numeric) -> String
 
-    # : (String|Numeric, Numeric) -> String
-    def self.lte: (String | Numeric, Numeric) -> String
+    # : (String|Numeric, String|Numeric) -> String
+    def self.lte: (String | Numeric, String | Numeric) -> String
 
-    # : (String|Numeric, Numeric) -> String
-    def self.gt: (String | Numeric, Numeric) -> String
+    # : (String|Numeric, String|Numeric) -> String
+    def self.gt: (String | Numeric, String | Numeric) -> String
 
-    # : (String|Numeric, Numeric) -> String
-    def self.gte: (String | Numeric, Numeric) -> String
+    # : (String|Numeric, String|Numeric) -> String
+    def self.gte: (String | Numeric, String | Numeric) -> String
+
+    # : (String|Numeric, String, String|Numeric) -> String
+    def self.comparison: (String | Numeric, String, String | Numeric) -> String
 
     # String value must go on the right. We can't tell the difference between field names and values.
-    # : (String, String|Numeric) -> String
-    def self.eq: (String, String | Numeric) -> String
+    # A number is written by QueryHelper#number_literal (NaN, Rational, and Complex raise),
+    # a boolean bare, and anything else as a quoted, escaped string literal.
+    # : (String, String|Symbol|Numeric|bool) -> String
+    def self.eq: (String, String | Symbol | Numeric | bool) -> String
   end
 end

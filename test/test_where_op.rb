@@ -1,4 +1,5 @@
 require "test_helper"
+require "bigdecimal"
 
 module VespaRuby
   class TestWhereOp < ActiveSupport::TestCase
@@ -31,11 +32,6 @@ module VespaRuby
       assert_equal "lawKey in (\"CA-STAT\", \"x\\\" or true or \\\"\")", op
     end
 
-    # NOTE: no test for annotated non-String values as there are no valid use cases yet. It looks like the intention was
-    # for numeric values, but the interface can also be used with custom objects that implement their own to_s. As a
-    # side note, functions could also be on the right side. I think it would make sense in that case to implement as a
-    # generic Vespa function class w/ custom to_s or maybe custom classes per function type. That should still be fully
-    # compatible w/ the current interface.
     test "contains with annotations" do
       op_contains_stem = WhereOp.contains("a", "A", annotations: {stem: "false"})
       assert_equal "a contains ({stem: false}\"A\")", op_contains_stem
@@ -51,6 +47,29 @@ module VespaRuby
 
       op_contains_stem = WhereOp.contains("a", "A", annotations: {stem: false, prefix: true})
       assert_equal "a contains ({stem: false, prefix: true}\"A\")", op_contains_stem
+    end
+
+    test "annotations reject a key or value that isn't YQL instead of writing its to_s" do
+      assert_raises(ArgumentError) { WhereOp.contains("a", "A", annotations: {"stem: false} or true or {x" => true}) }
+      assert_raises(ArgumentError) { WhereOp.contains("a", "A", annotations: {"stem\n" => true}) }
+      assert_raises(ArgumentError) { WhereOp.contains("a", "A", annotations: {1 => true}) }
+      assert_raises(ArgumentError) { WhereOp.contains("a", "A", annotations: {stem: nil}) }
+      assert_raises(ArgumentError) { WhereOp.contains("a", "A", annotations: {stem: Object.new}) }
+      assert_raises(ArgumentError) { WhereOp.contains("a", "A", annotations: {stem: [nil]}) }
+      assert_raises(ArgumentError) { WhereOp.contains("a", "A", annotations: {weight: Float::NAN}) }
+    end
+
+    test "annotations take Arrays, each element written like a value" do
+      op = WhereOp.contains("a", "A", annotations: {weights: [1, 2.5], terms: ["x\"y", :z, true, {n: 1}]})
+      assert_equal "a contains ({weights: [1, 2.5], terms: [\"x\\\"y\", \"z\", true, {n: 1}]}\"A\")", op
+    end
+
+    test "annotations take dotted keys, Symbol values, and nested Hashes" do
+      op = WhereOp.nearest_neighbor("v", "q", annotations: {"hnsw.exploreAdditionalHits" => 100, "targetHits" => 10, "label" => :nn})
+      assert_equal "({hnsw.exploreAdditionalHits: 100, targetHits: 10, label: \"nn\"}nearestNeighbor(v, q))", op
+
+      op = WhereOp.contains("a", "A", annotations: {origin: {original: "a\"b", offset: 0, length: 3}})
+      assert_equal "a contains ({origin: {original: \"a\\\"b\", offset: 0, length: 3}}\"A\")", op
     end
 
     test "and or" do
@@ -107,8 +126,22 @@ module VespaRuby
       assert_equal "string_field in (\"germany\", \"france\", \"norway\")", op_in_string
     end
 
-    test "in raises on an empty set" do
+    test "in raises on an empty or missing set" do
       assert_raises(ArgumentError) { WhereOp.in("string_field", []) }
+      assert_raises(ArgumentError) { WhereOp.in("string_field", nil) }
+    end
+
+    test "in and phrase raise on a nil or nested member instead of writing it as text" do
+      assert_raises(ArgumentError) { WhereOp.in("a", ["x", nil]) }
+      assert_raises(ArgumentError) { WhereOp.in("a", ["x", ["y"]]) }
+      assert_raises(ArgumentError) { WhereOp.phrase(["x", nil]) }
+      assert_raises(ArgumentError) { WhereOp.phrase(["x", ["y"]]) }
+      assert_raises(ArgumentError) { WhereOp.phrase(nil) }
+      assert_raises(ArgumentError) { WhereOp.phrase([]) }
+    end
+
+    test "phrase quotes and escapes each term" do
+      assert_equal "phrase(\"a\\\"b\", \"1\", \"c\")", WhereOp.phrase(["a\"b", 1, :c])
     end
 
     test "uri emits Vespa's uri() with an escaped literal" do
@@ -118,15 +151,48 @@ module VespaRuby
     test "eq escapes strings and writes numbers and booleans bare" do
       assert_equal "a = \"x\\\" or true or \\\"\"", WhereOp.eq("a", "x\" or true or \"")
       assert_equal "a = 5", WhereOp.eq("a", 5)
+      assert_equal "a = 1.5", WhereOp.eq("a", BigDecimal("1.5"))
       assert_equal "a = true", WhereOp.eq("a", true)
+      assert_equal "a = false", WhereOp.eq("a", false)
+      assert_equal "a = \"@x\"", WhereOp.eq("a", "@x")
       assert_raises(ArgumentError) { WhereOp.eq("a", nil) }
+    end
+
+    test "eq rejects numbers that aren't YQL" do
+      [Float::NAN, BigDecimal("NaN"), Rational(1, 2), Complex(1, 2)].each do |bad|
+        assert_raises(ArgumentError, bad.inspect) { WhereOp.eq("a", bad) }
+      end
     end
 
     test "comparisons accept only numbers" do
       assert_equal "a < 5", WhereOp.lt("a", 5)
+      assert_equal "a <= 5", WhereOp.lte("a", 5)
+      assert_equal "a > 5", WhereOp.gt("a", 5)
       assert_equal "a >= -1.5", WhereOp.gte("a", "-1.5")
       assert_raises(ArgumentError) { WhereOp.lt("a", "5 or true") }
       assert_raises(ArgumentError) { WhereOp.gt("a", "5\n or true") }
+    end
+
+    test "comparisons and range take every YQL number form and a parameter reference" do
+      assert_equal "a < 1.5", WhereOp.lt("a", BigDecimal("1.5"))
+      assert_equal "a < 1.0e+20", WhereOp.lt("a", 1e20)
+      assert_equal "a < Infinity", WhereOp.lt("a", Float::INFINITY)
+      assert_equal "a < @max", WhereOp.lt("a", "@max")
+      assert_equal "a <= .5", WhereOp.lte("a", ".5")
+      assert_equal "a > 1e5", WhereOp.gt("a", "1e5")
+      assert_equal "range(a, -1.5e-3, 2E+5)", WhereOp.range("a", "-1.5e-3", "2E+5")
+      assert_equal "range(a, @from, 10.5)", WhereOp.range("a", "@from", BigDecimal("10.5"))
+    end
+
+    test "comparisons and range reject numbers and strings that aren't YQL" do
+      [Float::NAN, BigDecimal("NaN"), Rational(1, 2), Complex(1, 2), nil, true, "+5", "5.5.5", "@", "@max or true", "- 5"].each do |bad|
+        assert_raises(ArgumentError, bad.inspect) { WhereOp.lt("a", bad) }
+        assert_raises(ArgumentError, bad.inspect) { WhereOp.range("a", 0, bad) }
+      end
+    end
+
+    test "range applies its annotations" do
+      assert_equal "({bounds: \"leftOpen\"}range(a, 1, 10))", WhereOp.range("a", 1, 10, annotations: {bounds: "leftOpen"})
     end
 
     test "rank" do

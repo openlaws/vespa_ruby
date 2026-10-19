@@ -15,6 +15,7 @@ module VespaRuby
     attr_reader :field_list #: Array[String]?
     attr_reader :total_count #: int?
     attr_reader :errors #: Array[untyped]?
+    attr_reader :coverage #: Coverage?
 
     #: (::Faraday::Response) -> void
     def initialize(faraday_response)
@@ -33,6 +34,7 @@ module VespaRuby
       @children = @json&.dig("root", "children")
       @field_list = @children&.first&.dig("fields")&.keys
       @errors = @json&.dig("root", "errors")
+      @coverage = Coverage.from_json(@json)
     end
   end
 end
