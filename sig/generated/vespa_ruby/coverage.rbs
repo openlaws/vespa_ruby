@@ -1,0 +1,22 @@
+# Generated from lib/vespa_ruby/coverage.rb with RBS::Inline
+
+module VespaRuby
+  # How much of the corpus a search covered: the response's root.coverage. A search
+  # that hit Vespa's soft timeout answers HTTP 200 with the hits found so far and no
+  # root.errors; only its coverage says the result set is partial
+  # (https://docs.vespa.ai/en/reference/querying/default-result-format.html).
+  class Coverage
+    # nil when the body has no root.coverage (an error body, or none).
+    # : (Hash[String, untyped]?) -> Coverage?
+    def self.from_json: (Hash[String, untyped]?) -> Coverage?
+
+    # The least complete of COVERAGES (nil entries ignored), for a search fanned out
+    # over several requests: a partial one before a full one, then the lowest percent.
+    # An entry without a percent loses to one with a known percent.
+    # : (*Coverage?) -> Coverage?
+    def self.least: (*Coverage?) -> Coverage?
+
+    # : () -> bool
+    def partial?: () -> bool
+  end
+end

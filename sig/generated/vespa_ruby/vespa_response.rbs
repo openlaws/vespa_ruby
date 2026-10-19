@@ -20,6 +20,8 @@ module VespaRuby
 
     attr_reader errors: Array[untyped]?
 
+    attr_reader coverage: Coverage?
+
     # : (::Faraday::Response) -> void
     def initialize: (::Faraday::Response) -> void
   end

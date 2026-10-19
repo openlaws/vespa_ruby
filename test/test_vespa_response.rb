@@ -25,6 +25,7 @@ module VespaRuby
       assert_nil response.children
       assert_nil response.total_count
       assert_nil response.errors
+      assert_nil response.coverage
     end
 
     test "parsed JSON body exposes children/total_count/field_list" do
@@ -37,6 +38,16 @@ module VespaRuby
       assert_equal 5, response.total_count
       assert_equal 1, response.children.length
       assert_equal %w[name id], response.field_list
+    end
+
+    test "a search Vespa cut short exposes its partial coverage" do
+      body = {"root" => {"fields" => {"totalCount" => 5}, "children" => [],
+                         "coverage" => {"coverage" => 86, "documents" => 3987856, "full" => false, "degraded" => {"timeout" => true}}}}
+      env = ::Faraday::Env.from(status: 200, body: body)
+      response = VespaResponse.new(::Faraday::Response.new(env))
+
+      assert response.coverage.partial?
+      assert_equal ["timeout"], response.coverage.degraded
     end
   end
 end

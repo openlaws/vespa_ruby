@@ -7,9 +7,12 @@ module VespaRuby
   module WhereOp
     extend QueryHelper
 
-    #: (String, untyped, Hash[untyped, untyped]) -> String
+    # The value is always a quoted, escaped string literal: Vespa rejects a bare
+    # number or boolean after contains ("Cannot cast java.lang.Integer to
+    # java.lang.String") and matches "5" and "true" against int and bool fields.
+    #: (String, String|Symbol|Numeric|bool, Hash[untyped, untyped]) -> String
     def self.contains(left, right, annotations: {})
-      right_value = right.is_a?(String) ? double_quoted_string(right) : right.to_s
+      right_value = quoted_value(right)
       right_value = build_annotations(annotations, right_value) unless annotations.empty?
       "#{left} contains #{right_value}"
     end
@@ -28,6 +31,8 @@ module VespaRuby
       "(#{terms.join(" or ")})"
     end
 
+    # The arguments are YQL (field names, query inputs, clauses), written as given:
+    # never pass request input.
     #: (String, String, Hash[untyped, untyped]) -> String
     def self.nearest_neighbor(doc_vector, query_vector, annotations: {})
       phrase = "nearestNeighbor(#{doc_vector}, #{query_vector})"
@@ -35,6 +40,8 @@ module VespaRuby
       annotations.empty? ? phrase : build_annotations(annotations, phrase)
     end
 
+    # The arguments are YQL (field names, query inputs, clauses), written as given:
+    # never pass request input.
     #: (Array[untyped], Hash[untyped, untyped]) -> String
     def self.wand(arguments, annotations: {})
       raise ArgumentError.new("wand requires at least two arguments") unless arguments.is_a?(Array) && arguments.length > 1
@@ -49,6 +56,8 @@ module VespaRuby
       annotations.empty? ? phrase : build_annotations(annotations, phrase)
     end
 
+    # The arguments are YQL (field names, query inputs, clauses), written as given:
+    # never pass request input.
     #: (String, String, Hash[untyped, untyped]) -> String
     def self.weak_and(left, right, annotations: {})
       phrase = "weakAnd(#{left}, #{right})"
@@ -56,13 +65,16 @@ module VespaRuby
       annotations.empty? ? phrase : build_annotations(annotations, phrase)
     end
 
-    # Split apart match and ranking arguments for usability
+    # Split apart match and ranking arguments for usability. The arguments are YQL
+    # clauses, written as given: never pass request input.
     def self.rank(match_argument, *ranking_arguments)
       return "rank(#{match_argument})" if ranking_arguments.empty?
 
       "rank(#{match_argument}, #{ranking_arguments.join(", ")})"
     end
 
+    # input is a YQL expression, written as given: never pass request input (send it
+    # as a request parameter and pass "@name").
     #: (String) -> String
     def self.user_input(input)
       "userInput(#{input})"
@@ -71,12 +83,15 @@ module VespaRuby
     # TODO: Consider implementing more optimal parameter substitution
     # where integer_field in (@integer_values)&integer_values=10,20,30
     # where string_field in (@string_values)&string_values=germany,france,norway
-    #: (String, Array[String|Integer]) -> String
+    #: (String, Array[String|Symbol|Numeric|bool]) -> String
     def self.in(value, set)
+      # in () is a YQL syntax error.
+      raise ArgumentError.new("in() requires an Array of at least one value") unless set.is_a?(Array) && !set.empty?
+
       # Do not wrap Integers in quotes
       return "#{value} in (#{set.join(", ")})" if set.all? { |v| v.is_a?(Integer) }
 
-      # Wrap strings in double-quotes
+      # Every other member is a quoted, escaped string literal; nil and collections raise.
       "#{value} in (#{quoted_array(set).join(", ")})"
     end
 
@@ -86,57 +101,94 @@ module VespaRuby
     end
 
     # range() lower and upper bounds are inclusive. "-Infinity" and "Infinity" are valid values.
+    # Each bound is a number or a number string; see QueryHelper#number_literal. Vespa's
+    # range() takes no request parameter reference ("Expected a numerical argument to
+    # range"), so "@name" raises.
     #: (String, String|Numeric, String|Numeric, Hash[untyped, untyped]) -> String
     def self.range(field, lower_bound, upper_bound, annotations: {})
-      raise ArgumentError.new("Invalid range lower bound") unless valid_numeric_or_number_string?(lower_bound)
-      raise ArgumentError.new("Invalid range upper bound") unless valid_numeric_or_number_string?(upper_bound)
+      lower = number_literal(lower_bound, "range lower bound", parameter: false)
+      upper = number_literal(upper_bound, "range upper bound", parameter: false)
+      phrase = "range(#{field}, #{lower}, #{upper})"
 
-      "range(#{field}, #{lower_bound}, #{upper_bound})"
+      annotations.empty? ? phrase : build_annotations(annotations, phrase)
     end
 
-    #: (String|Numeric) -> bool
+    # Whether NUMBER is something range writes as a bound; see QueryHelper#number_literal.
+    #: (untyped) -> bool
     def self.valid_numeric_or_number_string?(number)
-      number.is_a?(Numeric) || (number.is_a?(String) && /^-?(Infinity|\d+(\.\d+)?)$/.match?(number))
+      number_literal(number, parameter: false)
+      true
+    rescue ArgumentError
+      false
     end
 
-    #: (Array[String]) -> String
+    # Every term is a quoted, escaped string literal; nil and collections raise.
+    #: (Array[String|Symbol|Numeric|bool]) -> String
     def self.phrase(term_array)
+      raise ArgumentError.new("phrase() requires an Array of at least one term") unless term_array.is_a?(Array) && !term_array.empty?
+
       "phrase(#{quoted_array(term_array).join(", ")})"
     end
 
+    # Vespa's operator is uri(); url( is a YQL syntax error.
     #: (String) -> String
     def self.uri(uri)
-      "url(\"#{uri}\")"
+      "uri(#{quoted_value(uri)})"
     end
 
     # TODO: Not great support below since its difficult to figure out field names from strings
 
-    #: (String|Numeric, Numeric) -> String
+    # The right side of lt/lte/gt/gte is a number, a number string, or a request
+    # parameter reference ("@name"); see QueryHelper#number_literal. YQL has no
+    # Infinity literal after a comparison operator, so an infinite bound becomes the
+    # clause it means: range(left, -Infinity, Infinity), which matches every document
+    # with a value (lt Infinity, gt -Infinity), or false (lt -Infinity, gt Infinity).
+    #: (String|Numeric, String|Numeric) -> String
     def self.lt(left, right)
-      "#{left} < #{right}"
+      comparison(left, "<", right)
     end
 
-    #: (String|Numeric, Numeric) -> String
+    #: (String|Numeric, String|Numeric) -> String
     def self.lte(left, right)
-      "#{left} <= #{right}"
+      comparison(left, "<=", right)
     end
 
-    #: (String|Numeric, Numeric) -> String
+    #: (String|Numeric, String|Numeric) -> String
     def self.gt(left, right)
-      "#{left} > #{right}"
+      comparison(left, ">", right)
     end
 
-    #: (String|Numeric, Numeric) -> String
+    #: (String|Numeric, String|Numeric) -> String
     def self.gte(left, right)
-      "#{left} >= #{right}"
+      comparison(left, ">=", right)
     end
 
-    # String value must go on the right. We can't tell the difference between field names and values.
-    #: (String, String|Numeric) -> String
-    def self.eq(left, right)
-      return "#{left} = \"#{right}\"" if right.is_a?(String)
+    #: (String|Numeric, String, String|Numeric) -> String
+    def self.comparison(left, operator, right)
+      value = number_literal(right, "#{operator} value")
+      return "#{left} #{operator} #{value}" unless %w[Infinity -Infinity].include?(value)
 
-      "#{left} = #{right}"
+      # Every finite value is below Infinity and above -Infinity.
+      always = (value == "Infinity") == operator.start_with?("<")
+      always ? "range(#{left}, -Infinity, Infinity)" : "false"
+    end
+    private_class_method :comparison
+
+    # The value goes on the right. Vespa's = takes a number or a boolean, so the value is
+    # true or false (or the String "true" or "false"), or a number, number string, or
+    # request parameter reference ("@name") written bare by QueryHelper#number_literal.
+    # Bare, because Vespa reparses a quoted value and rejects an exponent without a
+    # decimal point there (`f = "1e5"`). NaN, Rational, Complex, and Infinity raise, and so
+    # does any other String: = on a string field is a YQL error ("is not an int item
+    # expression"); match strings with contains.
+    #: (String, String|Numeric|bool) -> String
+    def self.eq(left, right)
+      return "#{left} = #{right}" if [true, false, "true", "false"].include?(right)
+
+      value = number_literal(right, "eq value")
+      raise ArgumentError.new("Invalid eq value: YQL has no Infinity literal after =, got #{right.inspect}") if %w[Infinity -Infinity].include?(value)
+
+      "#{left} = #{value}"
     end
   end
 end

@@ -40,7 +40,12 @@ response = api.execute_search(request)
 response.status        # => 200
 response.total_count   # => total matches
 response.children      # => array of hits, each with a "fields" hash
+response.coverage      # => VespaRuby::Coverage, or nil when the body has none
 ```
+
+A search Vespa's soft timeout cut short still answers 200, with the hits found so far
+and no `errors`. `response.coverage.partial?` says so; `percent`, `documents`, and
+`degraded` (for example `["timeout"]`) say how much was searched and why not all.
 
 ### Selecting a rank profile
 
