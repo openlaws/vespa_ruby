@@ -101,20 +101,22 @@ module VespaRuby
     end
 
     # range() lower and upper bounds are inclusive. "-Infinity" and "Infinity" are valid values.
-    # Each bound is a number, a number string, or a request parameter reference ("@name");
-    # see QueryHelper#number_literal.
+    # Each bound is a number or a number string; see QueryHelper#number_literal. Vespa's
+    # range() takes no request parameter reference ("Expected a numerical argument to
+    # range"), so "@name" raises.
     #: (String, String|Numeric, String|Numeric, Hash[untyped, untyped]) -> String
     def self.range(field, lower_bound, upper_bound, annotations: {})
-      phrase = "range(#{field}, #{number_literal(lower_bound, "range lower bound")}, #{number_literal(upper_bound, "range upper bound")})"
+      lower = number_literal(lower_bound, "range lower bound", parameter: false)
+      upper = number_literal(upper_bound, "range upper bound", parameter: false)
+      phrase = "range(#{field}, #{lower}, #{upper})"
 
       annotations.empty? ? phrase : build_annotations(annotations, phrase)
     end
 
-    # Whether NUMBER is something range and the comparisons write; see
-    # QueryHelper#number_literal.
+    # Whether NUMBER is something range writes as a bound; see QueryHelper#number_literal.
     #: (untyped) -> bool
     def self.valid_numeric_or_number_string?(number)
-      number_literal(number)
+      number_literal(number, parameter: false)
       true
     rescue ArgumentError
       false
@@ -137,7 +139,10 @@ module VespaRuby
     # TODO: Not great support below since its difficult to figure out field names from strings
 
     # The right side of lt/lte/gt/gte is a number, a number string, or a request
-    # parameter reference ("@name"); see QueryHelper#number_literal.
+    # parameter reference ("@name"); see QueryHelper#number_literal. YQL has no
+    # Infinity literal after a comparison operator, so an infinite bound becomes the
+    # clause it means: range(left, -Infinity, Infinity), which matches every document
+    # with a value (lt Infinity, gt -Infinity), or false (lt -Infinity, gt Infinity).
     #: (String|Numeric, String|Numeric) -> String
     def self.lt(left, right)
       comparison(left, "<", right)
@@ -160,19 +165,30 @@ module VespaRuby
 
     #: (String|Numeric, String, String|Numeric) -> String
     def self.comparison(left, operator, right)
-      "#{left} #{operator} #{number_literal(right, "#{operator} value")}"
+      value = number_literal(right, "#{operator} value")
+      return "#{left} #{operator} #{value}" unless %w[Infinity -Infinity].include?(value)
+
+      # Every finite value is below Infinity and above -Infinity.
+      always = (value == "Infinity") == operator.start_with?("<")
+      always ? "range(#{left}, -Infinity, Infinity)" : "false"
     end
     private_class_method :comparison
 
-    # String value must go on the right. We can't tell the difference between field names and values.
-    # A number is written by QueryHelper#number_literal (NaN, Rational, and Complex raise),
-    # a boolean bare, and anything else as a quoted, escaped string literal.
-    #: (String, String|Symbol|Numeric|bool) -> String
+    # The value goes on the right. Vespa's = takes a number or a boolean, so the value is
+    # true or false (or the String "true" or "false"), or a number, number string, or
+    # request parameter reference ("@name") written bare by QueryHelper#number_literal.
+    # Bare, because Vespa reparses a quoted value and rejects an exponent without a
+    # decimal point there (`f = "1e5"`). NaN, Rational, Complex, and Infinity raise, and so
+    # does any other String: = on a string field is a YQL error ("is not an int item
+    # expression"); match strings with contains.
+    #: (String, String|Numeric|bool) -> String
     def self.eq(left, right)
-      return "#{left} = #{number_literal(right, "eq value")}" if right.is_a?(Numeric)
-      return "#{left} = #{right}" if right == true || right == false
+      return "#{left} = #{right}" if [true, false, "true", "false"].include?(right)
 
-      "#{left} = #{quoted_value(right)}"
+      value = number_literal(right, "eq value")
+      raise ArgumentError.new("Invalid eq value: YQL has no Infinity literal after =, got #{right.inspect}") if %w[Infinity -Infinity].include?(value)
+
+      "#{left} = #{value}"
     end
   end
 end

@@ -51,13 +51,13 @@ module VespaRuby
     def self.not: (String) -> String
 
     # range() lower and upper bounds are inclusive. "-Infinity" and "Infinity" are valid values.
-    # Each bound is a number, a number string, or a request parameter reference ("@name");
-    # see QueryHelper#number_literal.
+    # Each bound is a number or a number string; see QueryHelper#number_literal. Vespa's
+    # range() takes no request parameter reference ("Expected a numerical argument to
+    # range"), so "@name" raises.
     # : (String, String|Numeric, String|Numeric, Hash[untyped, untyped]) -> String
     def self.range: (String, String | Numeric, String | Numeric, Hash[untyped, untyped]) -> String
 
-    # Whether NUMBER is something range and the comparisons write; see
-    # QueryHelper#number_literal.
+    # Whether NUMBER is something range writes as a bound; see QueryHelper#number_literal.
     # : (untyped) -> bool
     def self.valid_numeric_or_number_string?: (untyped) -> bool
 
@@ -70,7 +70,10 @@ module VespaRuby
     def self.uri: (String) -> String
 
     # The right side of lt/lte/gt/gte is a number, a number string, or a request
-    # parameter reference ("@name"); see QueryHelper#number_literal.
+    # parameter reference ("@name"); see QueryHelper#number_literal. YQL has no
+    # Infinity literal after a comparison operator, so an infinite bound becomes the
+    # clause it means: range(left, -Infinity, Infinity), which matches every document
+    # with a value (lt Infinity, gt -Infinity), or false (lt -Infinity, gt Infinity).
     # : (String|Numeric, String|Numeric) -> String
     def self.lt: (String | Numeric, String | Numeric) -> String
 
@@ -86,10 +89,14 @@ module VespaRuby
     # : (String|Numeric, String, String|Numeric) -> String
     def self.comparison: (String | Numeric, String, String | Numeric) -> String
 
-    # String value must go on the right. We can't tell the difference between field names and values.
-    # A number is written by QueryHelper#number_literal (NaN, Rational, and Complex raise),
-    # a boolean bare, and anything else as a quoted, escaped string literal.
-    # : (String, String|Symbol|Numeric|bool) -> String
-    def self.eq: (String, String | Symbol | Numeric | bool) -> String
+    # The value goes on the right. Vespa's = takes a number or a boolean, so the value is
+    # true or false (or the String "true" or "false"), or a number, number string, or
+    # request parameter reference ("@name") written bare by QueryHelper#number_literal.
+    # Bare, because Vespa reparses a quoted value and rejects an exponent without a
+    # decimal point there (`f = "1e5"`). NaN, Rational, Complex, and Infinity raise, and so
+    # does any other String: = on a string field is a YQL error ("is not an int item
+    # expression"); match strings with contains.
+    # : (String, String|Numeric|bool) -> String
+    def self.eq: (String, String | Numeric | bool) -> String
   end
 end

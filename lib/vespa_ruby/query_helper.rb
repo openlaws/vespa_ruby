@@ -12,8 +12,10 @@ module VespaRuby
     # leading "." are allowed, a leading "+" is not), Infinity, or a request parameter
     # reference (@name).
     NUMBER_STRING = /\A(-?(Infinity|(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)|@#{IDENTIFIER})\z/
+    # A request parameter reference (@name), resolved by Vespa from the request's parameters.
+    PARAMETER_REFERENCE = /\A@#{IDENTIFIER}\z/
     # The named escapes a YQL string literal accepts for control characters.
-    CONTROL_ESCAPES = {"\b" => "\\b", "\t" => "\\t", "\n" => "\\n", "\f" => "\\f", "\r" => "\\r"}.freeze
+    CONTROL_ESCAPES = {"\b" => "\\b", "\t" => "\\t", "\n" => "\\n", "\f" => "\\f", "\r" => "\\r"}.freeze #: Hash[String, String]
 
     #: (Array[String], String?)
     def handle_splat(arg_array, default: nil)
@@ -72,9 +74,10 @@ module VespaRuby
     # The YQL text of a number: an Integer, a Float (not NaN), a BigDecimal (whose to_s,
     # "0.15e1", isn't YQL), or a String holding a number literal, Infinity, or a request
     # parameter reference (@name). Anything else (nil, NaN, Rational, Complex, other text)
-    # raises instead of writing its to_s into the YQL.
-    #: (untyped, ?String) -> String
-    def number_literal(value, description = "number")
+    # raises instead of writing its to_s into the YQL. PARAMETER: false raises on a
+    # parameter reference too, for operators that take only a literal (range()).
+    #: (untyped, ?String, ?parameter: bool) -> String
+    def number_literal(value, description = "number", parameter: true)
       text =
         case value
         when Integer then value.to_s
@@ -84,6 +87,9 @@ module VespaRuby
           value.to_s("F") if defined?(::BigDecimal) && value.is_a?(::BigDecimal) && !value.nan?
         end
       raise ArgumentError.new("Invalid #{description}: expected a number, got #{value.inspect}") unless text
+      if !parameter && PARAMETER_REFERENCE.match?(text)
+        raise ArgumentError.new("Invalid #{description}: expected a number literal, got the parameter reference #{value.inspect}")
+      end
 
       text
     end

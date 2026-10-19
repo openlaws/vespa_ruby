@@ -13,8 +13,11 @@ module VespaRuby
     # reference (@name).
     NUMBER_STRING: ::Regexp
 
+    # A request parameter reference (@name), resolved by Vespa from the request's parameters.
+    PARAMETER_REFERENCE: ::Regexp
+
     # The named escapes a YQL string literal accepts for control characters.
-    CONTROL_ESCAPES: untyped
+    CONTROL_ESCAPES: Hash[String, String]
 
     # : (Array[String], String?)
     def handle_splat: (untyped arg_array, ?default: untyped) -> untyped
@@ -47,9 +50,10 @@ module VespaRuby
     # The YQL text of a number: an Integer, a Float (not NaN), a BigDecimal (whose to_s,
     # "0.15e1", isn't YQL), or a String holding a number literal, Infinity, or a request
     # parameter reference (@name). Anything else (nil, NaN, Rational, Complex, other text)
-    # raises instead of writing its to_s into the YQL.
-    # : (untyped, ?String) -> String
-    def number_literal: (untyped, ?String) -> String
+    # raises instead of writing its to_s into the YQL. PARAMETER: false raises on a
+    # parameter reference too, for operators that take only a literal (range()).
+    # : (untyped, ?String, ?parameter: bool) -> String
+    def number_literal: (untyped, ?String, ?parameter: bool) -> String
 
     # See https://docs.vespa.ai/en/reference/query-language-reference.html#annotations
     # Keys must be YQL identifiers (dotted allowed). Values are numbers, booleans,

@@ -3,23 +3,36 @@
 ## [0.5.3]
 
 Every change below turns YQL that Vespa rejected (or that could carry injected YQL)
-into valid, escaped YQL. Queries that worked on 0.5.2 render the same; what used to render
-as invalid YQL (a `nil` member, an object's `to_s` as an annotation) now raises
-`ArgumentError`.
+into valid, escaped YQL. Queries that worked on 0.5.2 render the same, except `eq` with a
+number String, which is now written bare (`f = 5`, not `f = "5"`) and matches the same
+documents. What used to render as invalid YQL (a `nil` member, an object's `to_s` as an
+annotation, a String after `=`) now raises `ArgumentError`.
 
 - **Security:** `WhereOp.range`, `lt`/`lte`/`gt`/`gte`, and `eq` write only an Integer, a Float
-  (not NaN), a BigDecimal (as `1.5`, not its `0.15e1`), a String holding a YQL number
-  literal (`-1.5`, `.5`, `1e5`, `Infinity`/`-Infinity`) matched against the whole string,
-  or a request parameter reference (`"@name"`). `range` checked bounds with `^…$`, so a
-  bound with a line break (`"5\n) or true or …"`) passed; the comparisons didn't check
-  their value at all, so `nil`, `Rational`, `Complex`, and NaN came out as `1/2`, `1+2i`,
-  and `NaN`. A leading `+` is not YQL and raises.
+  (not NaN), a BigDecimal (as `1.5`, not its `0.15e1`), or a String holding a YQL number
+  literal (`-1.5`, `.5`, `1e5`; `Infinity`/`-Infinity` for all but `eq`) matched against
+  the whole string.
+  The comparisons and `eq` also take a request parameter reference (`"@name"`); `range`
+  raises on one, since Vespa's `range()` takes only literals ("Expected a numerical
+  argument to range"). `range` checked bounds with `^…$`, so a bound with a line break
+  (`"5\n) or true or …"`) passed; the comparisons didn't check their value at all, so
+  `nil`, `Rational`, `Complex`, and NaN came out as `1/2`, `1+2i`, and `NaN`. A leading `+`
+  is not YQL and raises.
+- `lt`/`lte`/`gt`/`gte` with an infinite bound write the clause it means, because YQL
+  reads `Infinity` after `<` or `>` as a field name: `range(f, -Infinity, Infinity)`
+  (every document with a value) for `lt(f, Infinity)` and `gt(f, -Infinity)`, and `false`
+  for `lt(f, -Infinity)` and `gt(f, Infinity)`. 0.5.2 wrote `f < Infinity`, which Vespa
+  rejected.
+- `WhereOp.eq` takes a number, a number String, `"@name"`, or a boolean (`true`, `false`,
+  `"true"`, `"false"`), each written bare; Vespa rejects a quoted `"1e5"` after `=`. Any
+  other String, and Infinity, raise: Vespa's `=` takes only numbers and booleans
+  (`lawKey = "CA-STAT"` is "not an int item expression"), so string matching uses
+  `contains`.
 - **Security:** annotation keys must be YQL identifiers (`stem`,
   `"hnsw.exploreAdditionalHits"`) and values a number, boolean, String, Symbol, nested
   Hash, or an Array of those; anything else raises. `build_annotations` wrote keys and
   non-String values with `to_s`, so a crafted key could add YQL to the query.
-- **Security:** `WhereOp.eq` and `WhereOp.uri` escape their string values like
-  `contains`.
+- **Security:** `WhereOp.uri` escapes its string value like `contains`.
 - **Security:** control characters in string literals (a line break, a NUL) are written
   with the escapes YQL accepts (`\n`, `\u0000`, …) instead of as-is.
 - `WhereOp.contains` writes every value as a quoted string literal. Vespa rejects a bare
